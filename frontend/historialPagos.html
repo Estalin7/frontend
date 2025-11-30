@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Historial de Pagos</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+    body { background: #f4f6f9; padding: 2rem; }
+
+    .container {
+      max-width: 1300px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 { margin-bottom: 1rem; color: #2c3e50; }
+
+    .filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filters input, .filters select {
+      padding: 0.7rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      padding: 0.7rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-pdf {
+      background: #e74c3c;
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+    }
+
+    th {
+      background: #f0f0f0;
+      padding: 1rem;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    td {
+      padding: 0.9rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:hover {
+      background: #f9fbff;
+    }
+
+    .total-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #eef5ff;
+      border-left: 5px solid #4c7cff;
+      font-size: 1.1rem;
+      border-radius: 6px;
+    }
+
+    .btn-back {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(0,0,0,0.1);
+      color: #2c3e50;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+      float: right;
+      margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+    .btn-back:hover {
+      background: rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📄 Historial de Pagos</h1>
+  <a href="dashboard.html" class="btn-back">← Volver</a>
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <div>
+      <label>Fecha Inicio</label><br>
+      <input type="date" id="fechaInicio">
+    </div>
+
+    <div>
+      <label>Fecha Fin</label><br>
+      <input type="date" id="fechaFin">
+    </div>
+
+    <div>
+      <label>Método Pago</label><br>
+      <select id="metodoPago">
+        <option value="">Todos</option>
+        <option value="efectivo">Efectivo</option>
+        <option value="electrónico">Electrónico</option>
+      </select>
+    </div>
+
+    <div style="display:flex; align-items:end;">
+      <button class="btn btn-primary" onclick="filtrarPagos()">Filtrar</button>
+    </div>
+
+    <div style="display:flex; align-items:end;">
+      <button class="btn btn-pdf" onclick="exportarPDF()">Exportar PDF</button>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID Pago</th>
+        <th>Fecha</th>
+        <th>Cliente</th>
+        <th>Método Pago</th>
+        <th>N° Pedido</th>
+        <th>Total (S/)</th>
+      </tr>
+    </thead>
+    <tbody id="tablaPagos"></tbody>
+  </table>
+
+  <!-- TOTAL -->
+  <div class="total-box" id="totalBox">
+    Total acumulado: S/ 0.00
+  </div>
+
+</div>
+
+<script>
+  async function filtrarPagos() {
+    const inicio = document.getElementById("fechaInicio").value;
+    const fin = document.getElementById("fechaFin").value;
+    const metodo = document.getElementById("metodoPago").value;
+
+    let url = `/api/pagos/historial?`;
+
+    if (inicio) url += `fechaInicio=${inicio}&`;
+    if (fin) url += `fechaFin=${fin}&`;
+    if (metodo) url += `metodo=${encodeURIComponent(metodo)}&`;
+
+    try {
+      const res = await fetch(url);
+      const respuesta = await res.json();
+
+      console.log("RESPUESTA DEL BACKEND:", respuesta);
+
+      // Asegurar estructura correcta del backend
+      const lista = respuesta.pagos || [];
+      const total = respuesta.total || 0;
+
+      mostrarPagos(lista, total);
+
+    } catch (e) {
+      alert("Error al filtrar: " + e);
+    }
+  }
+
+  function mostrarPagos(lista, totalAcumulado) {
+    const tbody = document.getElementById("tablaPagos");
+    tbody.innerHTML = "";
+
+    lista.forEach(p => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${p.idPago}</td>
+          <td>${p.fecha.replace("T", " ")}</td>
+          <td>${p.cliente}</td>
+          <td>${p.metodoPago}</td>
+          <td>${p.idPedido}</td>
+          <td>S/ ${p.precioFinal.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+
+    // Mostrar total REAL devuelto por backend
+    document.getElementById("totalBox").textContent =
+      "Total acumulado: S/ " + totalAcumulado.toFixed(2);
+  }
+
+  // ================ EXPORTAR PDF ====================
+  async function exportarPDF() {
+    const inicio = document.getElementById("fechaInicio").value;
+    const fin = document.getElementById("fechaFin").value;
+    const metodo = document.getElementById("metodoPago").value;
+
+    let url = `/api/pagos/historial/pdf?`;
+
+    if (inicio) url += `fechaInicio=${inicio}&`;
+    if (fin) url += `fechaFin=${fin}&`;
+    if (metodo) url += `metodo=${encodeURIComponent(metodo)}&`;
+
+    try {
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        alert("No se pudo generar el PDF");
+        return;
+      }
+
+      const blob = await res.blob();
+      const urlBlob = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = urlBlob;
+      a.download = "historial_pagos.pdf";
+      a.click();
+
+    } catch (e) {
+      alert("Error al generar PDF: " + e);
+    }
+  }
+
+  // Cargar al inicio
+  filtrarPagos();
+
+  document.getElementById("fechaInicio").addEventListener("change", function () {
+    const inicio = this.value;
+    const finInput = document.getElementById("fechaFin");
+
+    if (inicio) {
+      finInput.min = inicio;
+
+      if (finInput.value && finInput.value < inicio) {
+        finInput.value = inicio;
+      }
+    }
+  });
+</script>
+</body>
+</html>

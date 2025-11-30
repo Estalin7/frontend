@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vista de Cocina - Sistema de Pedidos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #e53935 0%, #b71c1c 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .header-info { display: flex; align-items: center; gap: 1rem; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    
+    .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    
+    .pedido-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.3s; }
+    .pedido-card:hover { transform: translateY(-2px); }
+    
+    /* Tarjeta modificada con borde especial */
+    .pedido-card.modificado { border: 3px solid #ff9800; animation: pulseModificado 2s infinite; }
+    @keyframes pulseModificado {
+      0%, 100% { box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); }
+      50% { box-shadow: 0 4px 20px rgba(255, 152, 0, 0.6); }
+    }
+
+    /* Alerta de modificación */
+    .alerta-modificado { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; padding: 0.6rem 1rem; text-align: center; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .alerta-modificado .icon { font-size: 1.2rem; animation: shake 0.5s ease-in-out infinite; }
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h3 { color: #2c3e50; font-size: 1.2rem; }
+    .mesa-tag { font-size: 0.9rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 20px; }
+    .mesa-tag.mesa { background: #e0f7fa; color: #00796b; }
+    .mesa-tag.llevar { background: #fff3e0; color: #e65100; }
+
+    .card-estado { font-size: 1rem; font-weight: 700; padding: 0.5rem 1.5rem; text-align: center; }
+    .estado-Ordenado { background: #ffcdd2; color: #b71c1c; }
+    .estado-EN_PREPARACION { background: #fff9c4; color: #f57f17; }
+
+    .card-body { padding: 1.5rem; }
+    .detalles-lista { list-style: none; margin-bottom: 1rem; }
+    .detalle-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f9f9f9; flex-wrap: wrap; align-items: center; }
+    .detalle-item:last-child { border-bottom: none; }
+    .item-nombre { font-weight: 600; color: #34495e; }
+    .item-qty { font-weight: 700; color: #e53935; padding-left: 1rem; }
+    .item-notas { font-size: 0.85rem; color: #7f8c8d; font-style: italic; margin-top: 4px; flex-basis: 100%; }
+
+    /* Producto nuevo/agregado */
+    .detalle-item.es-nuevo { background: linear-gradient(90deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px; padding: 0.75rem; margin: 0.25rem 0; border: 2px solid #4caf50; }
+    .detalle-item.es-nuevo .item-nombre { color: #2e7d32; }
+    .detalle-item.es-nuevo .item-qty { color: #2e7d32; }
+    .badge-nuevo { background: #4caf50; color: white; font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 10px; margin-left: 0.5rem; font-weight: 600; animation: pulseBadge 1s infinite; }
+    @keyframes pulseBadge {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .card-actions { padding: 1rem; background: #f8f9fa; }
+    .btn-accion { width: 100%; padding: 1rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn-preparar { background: #f57f17; color: white; }
+    .btn-preparar:hover { background: #ffb300; }
+    .btn-terminar { background: #2e7d32; color: white; }
+    .btn-terminar:hover { background: #43a047; }
+
+    .empty-state { text-align: center; padding: 4rem; color: #7f8c8d; grid-column: 1/-1; }
+    .empty-icon { font-size: 5rem; margin-bottom: 1rem; opacity: 0.5; }
+
+    /* Notificación visual (sin sonido) */
+    .notification-sound { position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 1rem 1.5rem; border-radius: 12px; display: none; z-index: 1000; animation: slideIn 0.3s ease-out; box-shadow: 0 4px 20px rgba(255, 152, 0, 0.4); }
+    .notification-sound.show { display: flex; align-items: center; gap: 0.75rem; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>👨‍🍳 Vista de Cocina</h1>
+      <div class="header-info">
+        <!-- Se elimina el texto de actualización automática -->
+        <a href="dashboard.html" class="btn-back">← Volver</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificación de modificación (solo visual, sin sonido) -->
+  <div class="notification-sound" id="notificationAlert">
+    <span style="font-size: 1.5rem;">⚠️</span>
+    <span><strong>¡Atención!</strong> Pedido modificado</span>
+  </div>
+
+  <div class="container">
+    <div class="pedidos-grid" id="pedidosGrid">
+      <div class="empty-state">
+        <div class="empty-icon">⏳</div>
+        <h3>Cargando pedidos...</h3>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const grid = document.getElementById('pedidosGrid');
+    let pedidosAnteriores = [];
+
+    // Cargar pedidos
+    async function loadPedidos() {
+      try {
+        const response = await fetch('/api/pedidos/cocina');
+        if (!response.ok) throw new Error('Error al cargar pedidos');
+
+        const pedidos = await response.json();
+        
+        // Verificar si hay pedidos modificados nuevos
+        verificarModificaciones(pedidos);
+        
+        pedidosAnteriores = pedidos;
+        renderPedidos(pedidos);
+
+      } catch (error) {
+        console.error(error);
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <h3>Error al conectar</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Verificar si hay nuevos pedidos modificados
+    function verificarModificaciones(pedidosNuevos) {
+      const modificadosNuevos = pedidosNuevos.filter(p => p.modificado);
+      const modificadosAnteriores = pedidosAnteriores.filter(p => p.modificado);
+      
+      // Si hay más pedidos modificados que antes, mostrar alerta visual
+      if (modificadosNuevos.length > modificadosAnteriores.length) {
+        mostrarNotificacion();
+      }
+    }
+
+    // Mostrar notificación visual (sin sonido)
+    function mostrarNotificacion() {
+      const notification = document.getElementById('notificationAlert');
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 4000);
+    }
+
+    // Renderizar pedidos
+    function renderPedidos(pedidos) {
+      if (!pedidos || pedidos.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>No hay pedidos pendientes</h3>
+            <p>El trabajo está hecho por ahora.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Ordenar: modificados primero y, dentro de cada grupo, más recientes primero
+      pedidos.sort((a, b) => {
+        const modA = a.modificado ? 1 : 0;
+        const modB = b.modificado ? 1 : 0;
+
+        if (modA !== modB) {
+          return modB - modA;
+        }
+
+        return b.idPedido - a.idPedido;
+      });
+
+      grid.innerHTML = pedidos.map(pedido => {
+        const esModificado = pedido.modificado;
+        
+        const mesaInfo = pedido.tipoMesa.startsWith('Mesa')
+          ? `<span class="mesa-tag mesa">🪑 ${pedido.tipoMesa}</span>`
+          : `<span class="mesa-tag llevar">📦 ${pedido.tipoMesa}</span>`;
+
+        const detallesHtml = pedido.detalles.map(d => {
+          const esNuevo = d.esNuevo;
+          return `
+            <li class="detalle-item ${esNuevo ? 'es-nuevo' : ''}">
+              <span class="item-nombre">
+                ${d.nombreProducto}
+                ${esNuevo ? '<span class="badge-nuevo">NUEVO</span>' : ''}
+              </span>
+              <span class="item-qty">x${d.cantidad}</span>
+              ${d.notas ? `<div class="item-notas">Nota: ${d.notas}</div>` : ''}
+            </li>
+          `;
+        }).join('');
+
+        let actionButton = '';
+        if (pedido.estado === 'Ordenado') {
+          actionButton = `<button class="btn-accion btn-preparar" onclick="cambiarEstado(${pedido.idPedido}, 'EN_PREPARACION')">🔥 Empezar Preparación</button>`;
+        } else if (pedido.estado === 'EN_PREPARACION') {
+          actionButton = `<button class="btn-accion btn-terminar" onclick="cambiarEstado(${pedido.idPedido}, 'ATENDIDO')">✅ Terminar (Atendido)</button>`;
+        }
+
+        return `
+          <div class="pedido-card ${esModificado ? 'modificado' : ''}">
+            ${esModificado ? `
+              <div class="alerta-modificado">
+                <span class="icon">⚠️</span>
+                ¡PEDIDO MODIFICADO!
+              </div>
+            ` : ''}
+            <div class="card-estado estado-${pedido.estado}">${pedido.estado.replace('_', ' ')}</div>
+            <div class="card-header">
+              <h3>Pedido #${pedido.idPedido}</h3>
+              ${mesaInfo}
+            </div>
+            <div class="card-body">
+              <ul class="detalles-lista">${detallesHtml}</ul>
+            </div>
+            <div class="card-actions">
+              ${actionButton}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Cambiar estado del pedido
+    async function cambiarEstado(idPedido, nuevoEstado) {
+      if (!confirm(`¿Cambiar pedido #${idPedido} a "${nuevoEstado}"?`)) return;
+
+      try {
+        const response = await fetch(`/api/pedidos/${idPedido}/estado?estado=${nuevoEstado}`, {
+          method: 'PATCH'
+        });
+
+        if (response.ok) {
+          loadPedidos();
+        } else {
+          const err = await response.json().catch(() => ({}));
+          alert('Error: ' + (err.error || 'No se pudo actualizar'));
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión');
+      }
+    }
+
+    // Carga inicial + recarga completa cada 10s
+    window.onload = () => {
+      loadPedidos();
+      setInterval(() => {
+        window.location.reload();
+      }, 10000); // 10 segundos
+    };
+  </script>
+</body>
+</html>

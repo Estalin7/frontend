@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mis Pedidos - Sistema de Pedidos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .header-actions { display: flex; gap: 1rem; }
+    .btn-back, .btn-modificar-header { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+    .btn-modificar-header { background: rgba(255,255,255,0.95); color: #667eea; font-weight: 600; }
+    .btn-back:hover, .btn-modificar-header:hover { background: rgba(255,255,255,0.3); }
+    .btn-modificar-header:hover { background: white; }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    
+    .info-banner { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+    .info-banner-icon { font-size: 2rem; }
+    .info-banner-text h3 { margin-bottom: 0.25rem; }
+    .info-banner-text p { font-size: 0.9rem; opacity: 0.9; }
+    
+    .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    
+    .pedido-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+    .pedido-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    
+    .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h3 { color: #2c3e50; font-size: 1.2rem; }
+    .card-header .mesa-tag { font-size: 0.9rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 20px; }
+    .mesa-tag.mesa { background: #e0f7fa; color: #00796b; }
+    .mesa-tag.llevar { background: #fff3e0; color: #e65100; }
+
+    .card-estado { font-size: 1rem; font-weight: 700; padding: 0.5rem 1.5rem; text-align: center; background: #fff9c4; color: #f57f17; }
+
+    .card-body { padding: 1.5rem; }
+    .detalles-lista { list-style: none; margin-bottom: 1rem; }
+    .detalle-item { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f9f9f9; flex-wrap: wrap; }
+    .detalle-item:last-child { border-bottom: none; }
+    .item-nombre { font-weight: 600; color: #34495e; }
+    .item-qty { font-weight: 700; color: #667eea; padding-left: 1rem; }
+    .item-notas { font-size: 0.85rem; color: #7f8c8d; font-style: italic; margin-top: 4px; flex-basis: 100%; }
+
+    .card-footer { padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #f0f0f0; }
+    .btn-cancelar { width: 100%; padding: 0.8rem; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s; font-size: 0.95rem; }
+    .btn-cancelar:hover { opacity: 0.9; }
+
+    .empty-state { text-align: center; padding: 4rem; color: #7f8c8d; grid-column: 1/-1; }
+    .empty-icon { font-size: 5rem; margin-bottom: 1rem; opacity: 0.5; }
+
+    /* Modal de confirmación */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 450px; }
+    .modal-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+    .modal-icon { font-size: 3rem; }
+    .modal-header h3 { color: #e74c3c; font-size: 1.3rem; }
+    .modal-body { color: #34495e; line-height: 1.6; margin-bottom: 2rem; }
+    .modal-body strong { color: #2c3e50; }
+    .modal-actions { display: flex; gap: 0.5rem; }
+    .btn-modal-cancelar { flex: 1; padding: 0.8rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-modal-confirmar { flex: 1; padding: 0.8rem; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 1rem; }
+      .pedidos-grid { grid-template-columns: 1fr; }
+      .header-actions { flex-direction: column; gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>📋 Mis Pedidos Activos</h1>
+      <div class="header-actions">
+        <a href="modificarPedido.html" class="btn-modificar-header">✏️ Modificar Pedidos</a>
+        <a href="dashboard.html" class="btn-back">← Volver</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="info-banner">
+      <div class="info-banner-icon">ℹ️</div>
+      <div class="info-banner-text">
+        <h3>Gestiona tus pedidos</h3>
+        <p>Cancela tus pedidos ordenados</p>
+      </div>
+    </div>
+
+    <div class="pedidos-grid" id="pedidosGrid">
+      <div class="empty-state">
+        <div class="empty-icon">⏳</div>
+        <h3>Cargando pedidos...</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación CANCELAR -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">⚠️</div>
+        <h3>Confirmar Cancelación</h3>
+      </div>
+      <div class="modal-body">
+        <p>¿Seguro de cancelar el <strong>Pedido #<span id="modalPedidoId"></span></strong>?</p>
+        <p style="margin-top: 1rem;">Esta acción <strong>no se puede deshacer</strong></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancelar" onclick="cerrarModal()">No, volver</button>
+        <button class="btn-modal-confirmar" onclick="confirmarCancelacion()">Sí, cancelar pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const grid = document.getElementById('pedidosGrid');
+    let pedidoACancelar = null;
+
+    // Cargar pedidos del mesero (solo ORDENADOS)
+    async function loadPedidos() {
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        alert('Sesión no válida. Por favor, inicia sesión nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/pedidos/mis-pedidos/${userId}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Error ${response.status}`);
+        }
+
+        const pedidos = await response.json();
+        renderPedidos(pedidos);
+
+      } catch (error) {
+        console.error(error);
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <h3>Error al conectar</h3>
+            <p>${error.message}. Intenta recargar la página.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Renderizar pedidos
+    function renderPedidos(pedidos) {
+      if (!pedidos || pedidos.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <h3>No tienes pedidos pendientes</h3>
+            <p>Los pedidos están siendo procesados.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = pedidos.map(pedido => {
+        const mesaInfo = pedido.tipoMesa.startsWith('Mesa')
+          ? `<span class="mesa-tag mesa">🪑 ${pedido.tipoMesa}</span>`
+          : `<span class="mesa-tag llevar">📦 ${pedido.tipoMesa}</span>`;
+
+        const detallesHtml = pedido.detalles.map(d => `
+          <li class="detalle-item">
+            <span class="item-nombre">${d.nombreProducto}</span>
+            <span class="item-qty">x${d.cantidad}</span>
+            ${d.notas ? `<div class="item-notas">Nota: ${d.notas}</div>` : ''}
+          </li>
+        `).join('');
+
+        return `
+          <div class="pedido-card">
+            <div class="card-estado">🟡 ORDENADO</div>
+            <div class="card-header">
+              <h3>Pedido #${pedido.idPedido}</h3>
+              ${mesaInfo}
+            </div>
+            <div class="card-body">
+              <ul class="detalles-lista">${detallesHtml}</ul>
+            </div>
+            <div class="card-footer">
+              <button class="btn-cancelar" onclick="abrirModalCancelar(${pedido.idPedido})">
+                ❌ Cancelar Pedido
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Abrir modal de confirmación
+    function abrirModalCancelar(idPedido) {
+      pedidoACancelar = idPedido;
+      document.getElementById('modalPedidoId').textContent = idPedido;
+      document.getElementById('confirmModal').classList.add('active');
+    }
+
+    // Cerrar modal
+    function cerrarModal() {
+      pedidoACancelar = null;
+      document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    // Confirmar cancelación
+    async function confirmarCancelacion() {
+      if (!pedidoACancelar) return;
+
+      const userId = localStorage.getItem('userId');
+      
+      try {
+        const response = await fetch(`/api/pedidos/${pedidoACancelar}/cancelar?idUser=${userId}`, {
+          method: 'PATCH'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert(`✅ ${data.mensaje}\n\nStock devuelto al inventario.`);
+          cerrarModal();
+          loadPedidos();
+        } else {
+          alert(`❌ Error: ${data.error}`);
+          cerrarModal();
+        }
+
+      } catch (error) {
+        console.error('Error al cancelar pedido:', error);
+        alert('Error de conexión con el servidor');
+        cerrarModal();
+      }
+    }
+
+    // Carga inicial
+    window.onload = loadPedidos;
+
+    // Auto-refresco cada 15 segundos
+    setInterval(loadPedidos, 15000);
+  </script>
+</body>
+</html>

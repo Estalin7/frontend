@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modificar Pedidos - Sistema de Pedidos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    
+    .info-banner { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3); }
+    .info-banner-icon { font-size: 2rem; }
+    .info-banner-text h3 { margin-bottom: 0.25rem; }
+    .info-banner-text p { font-size: 0.9rem; opacity: 0.9; }
+    
+    .pedidos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    
+    .pedido-card { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+    .pedido-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    
+    .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h3 { color: #2c3e50; font-size: 1.2rem; }
+    .mesa-tag { font-size: 0.9rem; font-weight: 600; padding: 0.3rem 0.8rem; border-radius: 20px; }
+    .mesa-tag.mesa { background: #e0f7fa; color: #00796b; }
+    .mesa-tag.llevar { background: #fff3e0; color: #e65100; }
+
+    .card-estado { font-size: 1rem; font-weight: 700; padding: 0.5rem 1.5rem; text-align: center; }
+    .card-estado.ordenado { background: #fff9c4; color: #f57f17; }
+    .card-estado.en-preparacion { background: #ffe0b2; color: #e65100; }
+    .card-estado.atendido { background: #c8e6c9; color: #2e7d32; }
+
+    .card-body { padding: 1.5rem; }
+    .detalles-lista { list-style: none; }
+    .detalle-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f9f9f9; flex-wrap: wrap; }
+    .detalle-item:last-child { border-bottom: none; }
+    .item-nombre { font-weight: 600; color: #34495e; }
+    .item-qty { font-weight: 700; color: #f39c12; padding-left: 1rem; }
+    .item-notas { font-size: 0.85rem; color: #7f8c8d; font-style: italic; margin-top: 4px; flex-basis: 100%; }
+
+    .card-footer { padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #f0f0f0; }
+    .btn-modificar { width: 100%; padding: 0.8rem; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s; font-size: 0.95rem; }
+    .btn-modificar:hover { opacity: 0.9; }
+
+    .empty-state { text-align: center; padding: 4rem; color: #7f8c8d; grid-column: 1/-1; }
+    .empty-icon { font-size: 5rem; margin-bottom: 1rem; opacity: 0.5; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; border-radius: 12px; width: 95%; max-width: 700px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .modal-header { background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h3 { font-size: 1.2rem; }
+    .modal-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+    .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #e0e0e0; display: flex; gap: 1rem; }
+    .btn-modal { flex: 1; padding: 0.8rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-guardar { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; }
+    .btn-cancelar { background: #95a5a6; color: white; }
+
+    /* Alertas */
+    .alert { padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem; }
+    .alert-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+    .alert-warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+
+    /* Secciones */
+    .section-title { color: #2c3e50; margin-bottom: 0.75rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    
+    /* Productos actuales */
+    .productos-actuales { margin-bottom: 1.5rem; }
+    .producto-actual { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 0.5rem; background: #fff; transition: all 0.3s; }
+    /* ya no hay clases modificado-aumentar / reducir / eliminado */
+    
+    .producto-info { flex: 1; }
+    .producto-nombre { font-weight: 600; color: #34495e; }
+    .producto-detalle { font-size: 0.85rem; color: #7f8c8d; }
+    .cantidad-original { font-size: 0.8rem; color: #95a5a6; }
+    
+    .producto-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-qty { width: 36px; height: 36px; border: 2px solid #ddd; background: white; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1.2rem; transition: all 0.2s; }
+    .btn-qty:hover:not(:disabled) { transform: scale(1.1); }
+    .btn-qty:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn-minus { color: #e74c3c; border-color: #e74c3c; }
+    .btn-minus:hover:not(:disabled) { background: #ffebee; }
+    .btn-plus { color: #27ae60; border-color: #27ae60; }
+    .btn-plus:hover:not(:disabled) { background: #e8f5e9; }
+    .qty-display { min-width: 50px; text-align: center; font-weight: 700; font-size: 1.2rem; color: #2c3e50; }
+
+    /* Productos para agregar */
+    .productos-agregar { margin-top: 1.5rem; }
+    .producto-disponible { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 0.5rem; background: #f9f9f9; }
+    .producto-disponible.seleccionado { border-color: #27ae60; background: #e8f5e9; }
+    .producto-precio { font-size: 0.85rem; color: #27ae60; font-weight: 600; }
+    .producto-stock { font-size: 0.8rem; color: #7f8c8d; }
+    
+    .notas-input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; margin-top: 0.5rem; font-size: 0.85rem; display: none; }
+    .notas-input.visible { display: block; }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 1rem; }
+      .pedidos-grid { grid-template-columns: 1fr; }
+      .modal-content { width: 98%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>✏️ Modificar Pedidos</h1>
+      <a href="misPedidos.html" class="btn-back">← Volver a Mis Pedidos</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="info-banner">
+      <div class="info-banner-icon">📝</div>
+      <div class="info-banner-text">
+        <h3>Modifica tus pedidos</h3>
+        <p>Agrega o quita productos</p>
+      </div>
+    </div>
+
+    <div class="pedidos-grid" id="pedidosGrid">
+      <div class="empty-state">
+        <div class="empty-icon">⏳</div>
+        <h3>Cargando pedidos...</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modificarModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏️ Modificar Pedido #<span id="modalPedidoId"></span></h3>
+        <button class="modal-close" onclick="cerrarModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="alertaEstado"></div>
+        
+        <div class="productos-actuales">
+          <h4 class="section-title">Productos en el pedido:</h4>
+          <div id="productosActuales"></div>
+        </div>
+
+        <div class="productos-agregar">
+          <h4 class="section-title">Agregar nuevos productos:</h4>
+          <div id="productosDisponibles"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-modal btn-guardar" id="btnGuardar" onclick="guardarModificacion()">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const grid = document.getElementById('pedidosGrid');
+    
+    // Estado global
+    let pedidoAModificar = null;
+    let productosDisponiblesCache = [];
+    
+    // Tracking de cambios
+    let cantidadesOriginales = {};  // { idProducto: cantidadOriginal }
+    let cantidadesActuales = {};    // { idProducto: cantidadActual }
+    let productosNuevos = {};       // { idProducto: cantidad } - productos nuevos a agregar
+
+    // Cargar pedidos
+    async function loadPedidos() {
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        alert('Sesión no válida. Por favor, inicia sesión nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/pedidos/modificables/${userId}`);
+        if (!response.ok) throw new Error('Error al cargar pedidos');
+        
+        const pedidos = await response.json();
+        renderPedidos(pedidos);
+      } catch (error) {
+        console.error(error);
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
+            <h3>Error al conectar</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Renderizar pedidos
+    function renderPedidos(pedidos) {
+      if (!pedidos || pedidos.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>No tienes pedidos para modificar</h3>
+            <p>Solo puedes modificar pedidos en estado: Ordenado, En Preparación o Atendido</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = pedidos.map(pedido => {
+        const estadoClass = pedido.estado.toLowerCase().replace('_', '-');
+        const estadoIcon = { 'ordenado': '🟡', 'en-preparacion': '🟠', 'atendido': '🟢' }[estadoClass] || '⚪';
+
+        const mesaInfo = pedido.tipoMesa.startsWith('Mesa')
+          ? `<span class="mesa-tag mesa">🪑 ${pedido.tipoMesa}</span>`
+          : `<span class="mesa-tag llevar">📦 ${pedido.tipoMesa}</span>`;
+
+        const detallesHtml = pedido.detalles.map(d => `
+          <li class="detalle-item">
+            <span class="item-nombre">${d.nombreProducto}</span>
+            <span class="item-qty">x${d.cantidad}</span>
+            ${d.notas ? `<div class="item-notas">Nota: ${d.notas}</div>` : ''}
+          </li>
+        `).join('');
+
+        const pedidoJson = JSON.stringify(pedido).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+        return `
+          <div class="pedido-card">
+            <div class="card-estado ${estadoClass}">${estadoIcon} ${pedido.estado.replace('_', ' ')}</div>
+            <div class="card-header">
+              <h3>Pedido #${pedido.idPedido}</h3>
+              ${mesaInfo}
+            </div>
+            <div class="card-body">
+              <ul class="detalles-lista">${detallesHtml}</ul>
+            </div>
+            <div class="card-footer">
+              <button class="btn-modificar" onclick='abrirModal(${pedidoJson})'>
+                ✏️ Modificar Pedido
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Abrir modal
+    async function abrirModal(pedido) {
+      pedidoAModificar = pedido;
+      
+      // Resetear estado
+      cantidadesOriginales = {};
+      cantidadesActuales = {};
+      productosNuevos = {};
+
+      document.getElementById('modalPedidoId').textContent = pedido.idPedido;
+
+      // Mostrar alerta según estado
+      const puedeReducir = pedido.estado === 'Ordenado';
+      const alertaEstado = document.getElementById('alertaEstado');
+      
+      if (puedeReducir) {
+        alertaEstado.innerHTML = `<div class="alert alert-info"><strong>Estado: Ordenado</strong> — Puedes aumentar y reducir cantidades</div>`;
+      } else {
+        alertaEstado.innerHTML = `<div class="alert alert-warning"><strong>Estado: ${pedido.estado.replace('_', ' ')}</strong> — Solo puedes aumentar cantidades (no reducir)</div>`;
+      }
+
+      // Inicializar cantidades originales y actuales
+      pedido.detalles.forEach(d => {
+        cantidadesOriginales[d.idProducto] = d.cantidad;
+        cantidadesActuales[d.idProducto] = d.cantidad;
+      });
+
+      // Renderizar productos actuales
+      renderProductosActuales(pedido.detalles, puedeReducir);
+
+      // Cargar productos disponibles
+      try {
+        const response = await fetch('/api/productos');
+        if (!response.ok) throw new Error('Error al cargar productos');
+        productosDisponiblesCache = await response.json();
+        renderProductosDisponibles();
+      } catch (error) {
+        alert('Error al cargar productos: ' + error.message);
+        return;
+      }
+
+      document.getElementById('modificarModal').classList.add('active');
+    }
+
+    // Renderizar productos actuales del pedido
+    function renderProductosActuales(detalles, puedeReducir) {
+      const container = document.getElementById('productosActuales');
+      
+      container.innerHTML = detalles.map(d => `
+        <div class="producto-actual" id="actual-${d.idProducto}">
+          <div class="producto-info">
+            <div class="producto-nombre">${d.nombreProducto}</div>
+            <div class="cantidad-original">Original: ${d.cantidad}</div>
+            ${d.notas ? `<div class="producto-detalle">Nota: ${d.notas}</div>` : ''}
+          </div>
+          <div class="producto-controls">
+            <button class="btn-qty btn-minus" 
+                    onclick="modificarCantidadActual(${d.idProducto}, -1)"
+                    ${!puedeReducir ? 'disabled title="No se puede reducir en este estado"' : ''}>
+              −
+            </button>
+            <span class="qty-display" id="qty-actual-${d.idProducto}">${d.cantidad}</span>
+            <button class="btn-qty btn-plus" onclick="modificarCantidadActual(${d.idProducto}, 1)">
+              +
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Renderizar productos disponibles para agregar
+    function renderProductosDisponibles() {
+      const container = document.getElementById('productosDisponibles');
+      
+      const productosEnPedido = Object.keys(cantidadesOriginales).map(Number);
+      const disponibles = productosDisponiblesCache.filter(p => 
+        !productosEnPedido.includes(p.idProducto) && p.estado === 'Disponible'
+      );
+
+      if (disponibles.length === 0) {
+        container.innerHTML = '<p style="color: #7f8c8d; font-style: italic;">No hay productos adicionales disponibles</p>';
+        return;
+      }
+
+      container.innerHTML = disponibles.map(p => `
+        <div class="producto-disponible" id="nuevo-${p.idProducto}">
+          <div class="producto-info">
+            <div class="producto-nombre">${p.nombre}</div>
+            <div>
+              <span class="producto-precio">S/ ${p.precio.toFixed(2)}</span>
+              <span class="producto-stock">• Stock: ${p.cantidad}</span>
+            </div>
+          </div>
+          <div class="producto-controls">
+            <button class="btn-qty btn-minus" onclick="modificarProductoNuevo(${p.idProducto}, -1)">−</button>
+            <span class="qty-display" id="qty-nuevo-${p.idProducto}">0</span>
+            <button class="btn-qty btn-plus" onclick="modificarProductoNuevo(${p.idProducto}, 1)">+</button>
+          </div>
+        </div>
+        <input type="text" class="notas-input" id="notas-${p.idProducto}" placeholder="Notas (opcional)">
+      `).join('');
+    }
+
+    // Modificar cantidad de producto ACTUAL (ya en el pedido)
+    function modificarCantidadActual(idProducto, delta) {
+      const cantidadOriginal = cantidadesOriginales[idProducto];
+      let cantidadActual = cantidadesActuales[idProducto];
+      let nuevaCantidad = cantidadActual + delta;
+
+      if (nuevaCantidad < 0) nuevaCantidad = 0;
+      
+      if (pedidoAModificar.estado !== 'Ordenado' && nuevaCantidad < cantidadOriginal) {
+        return;
+      }
+
+      // Validación: no permitir que el pedido quede con total 0
+      let totalSimulado = 0;
+      for (const id in cantidadesActuales) {
+        if (parseInt(id) === parseInt(idProducto)) {
+          totalSimulado += nuevaCantidad;
+        } else {
+          totalSimulado += cantidadesActuales[id];
+        }
+      }
+
+      if (totalSimulado === 0) {
+        alert('El pedido debe mantener al menos un producto con cantidad 1. Si quieres quitar todo, cancela el pedido.');
+        return;
+      }
+
+      cantidadesActuales[idProducto] = nuevaCantidad;
+
+      const qtySpan = document.getElementById(`qty-actual-${idProducto}`);
+      qtySpan.textContent = nuevaCantidad;
+      // ya no se cambia el color/estilo del contenedor
+    }
+
+    // Modificar cantidad de producto NUEVO (a agregar)
+    function modificarProductoNuevo(idProducto, delta) {
+      let cantidad = productosNuevos[idProducto] || 0;
+      cantidad = Math.max(0, cantidad + delta);
+
+      if (cantidad > 0) {
+        productosNuevos[idProducto] = cantidad;
+      } else {
+        delete productosNuevos[idProducto];
+      }
+
+      const qtySpan = document.getElementById(`qty-nuevo-${idProducto}`);
+      const container = document.getElementById(`nuevo-${idProducto}`);
+      const notasInput = document.getElementById(`notas-${idProducto}`);
+      
+      qtySpan.textContent = cantidad;
+      
+      if (cantidad > 0) {
+        container.classList.add('seleccionado');
+        notasInput.classList.add('visible');
+      } else {
+        container.classList.remove('seleccionado');
+        notasInput.classList.remove('visible');
+      }
+    }
+
+    // Cerrar modal
+    function cerrarModal() {
+      document.getElementById('modificarModal').classList.remove('active');
+      pedidoAModificar = null;
+      cantidadesOriginales = {};
+      cantidadesActuales = {};
+      productosNuevos = {};
+    }
+
+    // Guardar modificación
+    async function guardarModificacion() {
+      const userId = localStorage.getItem('userId');
+      
+      const productosAgregar = [];
+      const productosQuitar = [];
+
+      for (const idProducto in cantidadesActuales) {
+        const original = cantidadesOriginales[idProducto];
+        const actual = cantidadesActuales[idProducto];
+        const diferencia = actual - original;
+
+        if (diferencia > 0) {
+          productosAgregar.push({
+            idProducto: parseInt(idProducto),
+            cantidad: diferencia,
+            notas: null
+          });
+        } else if (diferencia < 0) {
+          productosQuitar.push({
+            idProducto: parseInt(idProducto),
+            cantidad: Math.abs(diferencia),
+            notas: null
+          });
+        }
+      }
+
+      for (const idProducto in productosNuevos) {
+        const cantidad = productosNuevos[idProducto];
+        const notasInput = document.getElementById(`notas-${idProducto}`);
+        productosAgregar.push({
+          idProducto: parseInt(idProducto),
+          cantidad: cantidad,
+          notas: notasInput ? notasInput.value : null
+        });
+      }
+
+      if (productosAgregar.length === 0 && productosQuitar.length === 0) {
+        alert('No hay cambios para guardar.');
+        return;
+      }
+
+      const modificacionDTO = {
+        idUser: userId,
+        productosAgregar: productosAgregar.length > 0 ? productosAgregar : null,
+        productosQuitar: productosQuitar.length > 0 ? productosQuitar : null
+      };
+
+      console.log('Enviando modificación:', JSON.stringify(modificacionDTO, null, 2));
+
+      const btnGuardar = document.getElementById('btnGuardar');
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando...';
+
+      try {
+        const response = await fetch(`/api/pedidos/${pedidoAModificar.idPedido}/modificar`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(modificacionDTO)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert(`✅ ${data.mensaje}\n\nLos cambios se reflejarán automáticamente en cocina.`);
+          cerrarModal();
+          loadPedidos();
+        } else {
+          alert(`❌ Error: ${data.error}`);
+          btnGuardar.disabled = false;
+          btnGuardar.textContent = '💾 Guardar Cambios';
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión con el servidor');
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = '💾 Guardar Cambios';
+      }
+    }
+
+    // Carga inicial
+    window.onload = loadPedidos;
+  </script>
+</body>
+</html>

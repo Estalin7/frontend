@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Pedidos - Restaurante</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 400px; gap: 2rem; }
+    .order-form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .form-section { margin-bottom: 2rem; }
+    .form-section h3 { color: #2c3e50; margin-bottom: 1rem; font-size: 1.1rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #34495e; font-weight: 500; font-size: 0.95rem; }
+    .form-group input, .form-group select { width: 100%; padding: 0.7rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; transition: border-color 0.3s; }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+    /* Estilo para el select deshabilitado */
+    .form-group select:disabled { background-color: #f8f9fa; color: #555; }
+    .products-selector { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; }
+    .product-select-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .product-select-group select { flex: 2; }
+    .product-select-group input { flex: 1; max-width: 100px; }
+    .btn-add-product { width: 100%; padding: 0.8rem; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: opacity 0.3s; }
+    .btn-add-product:hover { opacity: 0.9; }
+    .cart-items { margin-top: 1rem; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border-radius: 8px; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .cart-item-info { flex: 1; }
+    .cart-item-name { font-weight: 600; color: #2c3e50; margin-bottom: 0.25rem; }
+    .cart-item-price { color: #667eea; font-size: 0.9rem; }
+    .cart-item-notes { font-size: 0.85rem; color: #7f8c8d; margin-top: 0.25rem; font-style: italic; }
+    .cart-item-controls { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-qty { width: 30px; height: 30px; border: none; background: #667eea; color: white; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: opacity 0.3s; }
+    .btn-qty:hover { opacity: 0.8; }
+    .item-qty { min-width: 30px; text-align: center; font-weight: 600; }
+    .btn-remove { background: #e74c3c; color: white; border: none; padding: 0.4rem 0.7rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-left: 0.5rem; }
+    .order-summary { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: fit-content; position: sticky; top: 2rem; }
+    .order-summary h3 { color: #2c3e50; margin-bottom: 1.5rem; }
+    .summary-line { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; }
+    .summary-line.total { border-bottom: none; border-top: 2px solid #667eea; margin-top: 0.5rem; padding-top: 1rem; font-size: 1.2rem; font-weight: 700; color: #667eea; }
+    .btn-submit { width: 100%; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 1.5rem; transition: opacity 0.3s; }
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+    .empty-cart { text-align: center; padding: 3rem 2rem; color: #7f8c8d; }
+    .empty-cart-icon { font-size: 4rem; margin-bottom: 1rem; }
+    @media (max-width: 968px) {
+      .container { grid-template-columns: 1fr; }
+      .order-summary { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>🛒 Registrar Pedidos</h1>
+      <a href="dashboard.html" class="btn-back">← Volver</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="order-form">
+      <div class="form-section">
+        <h3>Información del Pedido</h3>
+        
+        <div class="form-group">
+          <label for="tipoPedido">Tipo de Pedido</label>
+          <select id="tipoPedido" onchange="updateFormFields()">
+            <option value="Para Mesa">🪑 Para Mesa</option>
+            <option value="Para Llevar">📦 Para Llevar</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="mesaGroup">
+          <label for="numeroMesa">Número de Mesa</label>
+          <select id="numeroMesa">
+            </select>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Productos del Pedido</h3>
+        
+        <div class="products-selector">
+          <div class="product-select-group">
+            <select id="productoSelect">
+              <option value="">Seleccione un producto</option>
+            </select>
+            <input type="text" id="cantidadInput" inputmode="numeric" pattern="\d*" placeholder="Cant." maxlength="2" value="1" oninput="sanitizeCantidadPedido(this)">
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 1rem;">
+             <input type="text" id="notasInput" placeholder="Notas (ej. sin ají, extra queso...)" maxlength="50" oninput="sanitizeNotas(this)" style="padding: 0.7rem; font-size: 0.95rem;">
+          </div>
+          <button class="btn-add-product" onclick="addProduct()">➕ Agregar al Pedido</button>
+        </div>
+
+        <div class="cart-items" id="cartItems"></div>
+      </div>
+    </div>
+
+    <div class="order-summary">
+      <h3>Resumen del Pedido</h3>
+      <div id="summaryContent"></div>
+      <button class="btn-submit" id="btnSubmit" onclick="submitOrder()">Confirmar Pedido</button>
+    </div>
+  </div>
+
+  <script>
+    let cart = [];
+    let productos = [];
+    let mesas = []; 
+
+    function sanitizeCantidadPedido(inputEl) {
+      const cleaned = inputEl.value.replace(/[^0-9]/g, '').slice(0, 2);
+      let val = cleaned === '' ? '' : String(Math.min(parseInt(cleaned, 10) || 0, 99));
+      if (val !== '' && parseInt(val, 10) < 1) val = '1';
+      if (val !== inputEl.value) inputEl.value = val;
+    }
+    
+    function sanitizeNotas(inputEl) {
+      const cleaned = inputEl.value
+        .replace(/[^0-9A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\.,]/g, '')
+        .slice(0, 50);
+      if (cleaned !== inputEl.value) inputEl.value = cleaned;
+    }
+
+    async function loadMesas() {
+      try {
+        const response = await fetch('/api/mesas');
+        if (!response.ok) throw new Error('No se pudo cargar la lista de mesas.');
+        mesas = await response.json();
+        
+        const mesaCero = mesas.find(m => m.idMesa === 0);
+        if (!mesaCero) {
+            alert('¡Advertencia! No se encontró la "Mesa 0" en la base de datos. Los pedidos "Para Llevar" no funcionarán. Por favor, créela en el panel de Administración.');
+        }
+
+        updateFormFields(); 
+      } catch (error) {
+        console.error('Error al cargar mesas:', error);
+      }
+    }
+
+    async function loadProductos() {
+      try {
+        const response = await fetch('/api/productos');
+        productos = await response.json();
+        const select = document.getElementById('productoSelect');
+        select.innerHTML = '<option value="">Seleccione un producto</option>';
+        productos.filter(p => p.cantidad > 0).forEach(prod => {
+          select.innerHTML += `<option value="${prod.idProducto}" data-precio="${prod.precio}" data-nombre="${prod.nombre}" data-stock="${prod.cantidad}">${prod.nombre} - S/ ${prod.precio.toFixed(2)} (Stock: ${prod.cantidad})</option>`;
+        });
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+      }
+    }
+
+    function addProduct() {
+      const select = document.getElementById('productoSelect');
+      const cantidadInput = document.getElementById('cantidadInput');
+      const notasInput = document.getElementById('notasInput'); 
+      if (!select.value) { alert('Seleccione un producto'); return; }
+      const cantidadRaw = (cantidadInput.value || '').replace(/[^0-9]/g, '');
+      if (!cantidadRaw) { alert('Ingrese una cantidad válida'); return; }
+      const cantidad = parseInt(cantidadRaw, 10);
+      if (!(cantidad >= 1 && cantidad <= 99)) { alert('La cantidad debe ser un entero entre 1 y 99'); return; }
+      const notas = (notasInput.value || '').replace(/[^0-9A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\.,]/g, '').slice(0, 50).trim(); 
+      const option = select.options[select.selectedIndex];
+      const idProducto = parseInt(select.value);
+      const nombre = option.getAttribute('data-nombre');
+      const precio = parseFloat(option.getAttribute('data-precio'));
+      const stock = parseInt(option.getAttribute('data-stock'));
+      const cantidadEnCarrito = cart.find(item => item.idProducto === idProducto)?.cantidad || 0;
+      if (cantidadEnCarrito + cantidad > stock) {
+        alert(`Stock insuficiente. Disponible: ${stock}, En carrito: ${cantidadEnCarrito}`);
+        return;
+      }
+      const existente = cart.find(item => item.idProducto === idProducto && item.notas === notas);
+      if (existente) { existente.cantidad += cantidad; } 
+      else { cart.push({ idProducto, nombre, precio, cantidad, notas }); }
+      select.value = '';
+      cantidadInput.value = 1;
+      notasInput.value = '';
+      updateCartDisplay();
+    }
+
+    function updateCartDisplay() {
+      const cartItems = document.getElementById('cartItems');
+      if (cart.length === 0) {
+        cartItems.innerHTML = `<div class="empty-cart"><div class="empty-cart-icon">🛒</div><p>No hay productos en el pedido</p></div>`;
+        document.getElementById('btnSubmit').disabled = true;
+        updateSummary();
+        return;
+      }
+      cartItems.innerHTML = cart.map((item, index) => {
+        const notasHtml = item.notas ? `<div class="cart-item-notes">Nota: ${item.notas}</div>` : '';
+        return `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div class="cart-item-name">${item.nombre}</div>
+            <div class="cart-item-price">S/ ${item.precio.toFixed(2)} c/u</div>
+            ${notasHtml}
+          </div>
+          <div class="cart-item-controls">
+            <button class="btn-qty" onclick="decreaseQty(${index})">−</button>
+            <span class="item-qty">${item.cantidad}</span>
+            <button class="btn-qty" onclick="increaseQty(${index})">+</button>
+            <button class="btn-remove" onclick="removeItem(${index})">🗑</button>
+          </div>
+        </div>
+        `
+      }).join('');
+      document.getElementById('btnSubmit').disabled = false;
+      updateSummary();
+    }
+
+    // --- AQUÍ ESTÁ LA CORRECCIÓN DE LOS MONTOS ---
+    function updateSummary() {
+      const summaryContent = document.getElementById('summaryContent');
+      if (cart.length === 0) {
+        summaryContent.innerHTML = '<p style="color: #7f8c8d; text-align: center;">Carrito vacío</p>';
+        return;
+      }
+      
+      const subtotal = cart.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+      const igv = subtotal * 0.18; 
+      const totalExacto = subtotal + igv;
+      
+      // APLICAMOS EL REDONDEO A FAVOR DEL NEGOCIO (Ej: 12.12 -> 12.20)
+      const totalRedondeado = Math.ceil(totalExacto * 10) / 10;
+
+      let itemsHtml = cart.map(item => `
+        <div class="summary-line">
+          <span>${item.nombre} (x${item.cantidad})</span>
+          <span>S/ ${(item.precio * item.cantidad).toFixed(2)}</span>
+        </div>
+      `).join('');
+      
+      summaryContent.innerHTML = `
+        ${itemsHtml}
+        <div class="summary-line" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+          <span>Subtotal</span>
+          <span>S/ ${subtotal.toFixed(2)}</span>
+        </div>
+        <div class="summary-line">
+          <span>IGV (18%)</span>
+          <span>S/ ${igv.toFixed(2)}</span>
+        </div>
+        <div class="summary-line total">
+          <span>TOTAL</span>
+          <span>S/ ${totalRedondeado.toFixed(2)}</span>
+        </div>
+      `;
+    }
+    // ----------------------------------------------
+
+    function increaseQty(index) {
+      const item = cart[index];
+      const producto = productos.find(p => p.idProducto === item.idProducto);
+      if (item.cantidad < producto.cantidad) { item.cantidad++; updateCartDisplay(); } 
+      else { alert(`Stock máximo alcanzado (${producto.cantidad})`); }
+    }
+    
+    function decreaseQty(index) {
+      if (cart[index].cantidad > 1) { cart[index].cantidad--; } 
+      else { cart.splice(index, 1); }
+      updateCartDisplay();
+    }
+    
+    function removeItem(index) {
+      if (confirm('¿Eliminar este producto del pedido?')) { cart.splice(index, 1); updateCartDisplay(); }
+    }
+
+    function updateFormFields() {
+      const tipoPedido = document.getElementById('tipoPedido').value;
+      const mesaGroup = document.getElementById('mesaGroup');
+      const select = document.getElementById('numeroMesa');
+      
+      mesaGroup.style.display = 'block';
+      select.innerHTML = '';
+
+      if (tipoPedido === 'Para Mesa') {
+        select.disabled = false;
+        select.innerHTML = '<option value="">Seleccione una mesa</option>';
+        mesas.filter(m => m.idMesa !== 0 && m.estado === 'Disponible').forEach(mesa => {
+          select.innerHTML += `<option value="${mesa.idMesa}">Mesa ${mesa.idMesa}</option>`;
+        });
+
+      } else { 
+        select.disabled = true;
+        const mesaCero = mesas.find(m => m.idMesa === 0);
+        if (mesaCero) {
+            select.innerHTML = `<option value="0" selected>Mesa 0 (Para Llevar)</option>`;
+        } else {
+            select.innerHTML = `<option value="" selected>Error: Mesa 0 no configurada</option>`;
+        }
+      }
+    }
+
+    async function submitOrder() {
+      const idUser = localStorage.getItem('userId'); 
+      if (!idUser) {
+        alert('No se encontró información del usuario. Por favor, inicie sesión nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const idMesaString = document.getElementById('numeroMesa').value;
+
+      if (!idMesaString || idMesaString === "") {
+        alert('Por favor seleccione una mesa');
+        return;
+      }
+      
+      const idMesa = parseInt(idMesaString);
+
+      if (cart.length === 0) {
+        alert('El pedido está vacío');
+        return;
+      }
+
+      const pedidoData = {
+        idUser: idUser,
+        idMesa: idMesa, 
+        detalles: cart.map(item => ({
+          idProducto: item.idProducto,
+          cantidad: item.cantidad,
+          notas: item.notas
+        }))
+      };
+
+      document.getElementById('btnSubmit').disabled = true;
+
+      try {
+        const response = await fetch('/api/pedidos', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pedidoData)
+        });
+
+        if (response.ok) {
+          const pedido = await response.json();
+          // Obtenemos el texto del total ya redondeado
+          const totalText = document.querySelector('.summary-line.total span:last-child').textContent;
+          
+          const tipoMensaje = idMesa === 0 ? "Pedido PARA LLEVAR" : `Pedido para MESA ${idMesa}`;
+
+          alert(`✅ ${tipoMensaje} (ID: #${pedido.idPedido}) registrado!\n\nTotal: ${totalText}\n\nEl pedido ha sido enviado a cocina`);
+          
+          cart = [];
+          updateCartDisplay();
+          document.getElementById('tipoPedido').value = 'Para Mesa';
+          updateFormFields();
+          loadProductos(); 
+        } else {
+          const error = await response.json();
+          alert('Error: ' + (error.error || 'No se pudo crear el pedido (ej. stock insuficiente)'));
+        }
+      } catch (error) {
+        console.error('Error al crear pedido:', error);
+        alert('Error de conexión con el servidor');
+      } finally {
+        document.getElementById('btnSubmit').disabled = false;
+      }
+    }
+
+    window.onload = () => {
+      loadMesas(); 
+      loadProductos();
+      updateCartDisplay();
+    };
+  </script>
+</body>
+</html>

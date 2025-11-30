@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagos - Sistema de Restaurante</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+    
+    .header { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    
+    .panel { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: calc(100vh - 140px); overflow-y: auto; }
+    .panel h2 { color: #2c3e50; margin-bottom: 1rem; font-size: 1.2rem; border-bottom: 2px solid #27ae60; padding-bottom: 0.5rem; }
+    
+    .order-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .order-item { border: 2px solid #e0e0e0; border-radius: 10px; padding: 1rem; cursor: pointer; transition: all 0.3s; }
+    .order-item:hover { border-color: #27ae60; background: #f8fff8; }
+    .order-item.selected { border-color: #27ae60; background: linear-gradient(135deg, rgba(39,174,96,0.1) 0%, rgba(34,153,84,0.1) 100%); }
+    .order-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .order-id { font-size: 1.1rem; font-weight: 700; color: #2c3e50; }
+    .order-total { font-size: 1.2rem; font-weight: 700; color: #27ae60; }
+    .order-details { display: flex; justify-content: space-between; font-size: 0.85rem; color: #7f8c8d; }
+    .order-items-summary { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #e0e0e0; font-size: 0.8rem; color: #666; }
+
+    .client-type-section { margin-bottom: 1rem; }
+    .client-type-section label { font-weight: 600; color: #2c3e50; display: block; margin-bottom: 0.5rem; }
+    .radio-group { display: flex; gap: 1rem; }
+    .radio-option { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .radio-option:hover { border-color: #27ae60; }
+    .radio-option.selected { border-color: #27ae60; background: rgba(39,174,96,0.1); }
+
+    .client-form { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .client-form h4 { color: #34495e; margin-bottom: 0.75rem; font-size: 0.95rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .form-row.single { grid-template-columns: 1fr; }
+    .form-group { margin-bottom: 0; }
+    .form-group label { display: block; margin-bottom: 0.3rem; color: #34495e; font-weight: 500; font-size: 0.85rem; }
+    .form-group input { width: 100%; padding: 0.6rem; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 0.9rem; transition: border-color 0.3s; }
+    .form-group input:focus { outline: none; border-color: #27ae60; }
+    .form-group input.error { border-color: #e74c3c; }
+
+    .payment-summary { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .summary-line { display: flex; justify-content: space-between; padding: 0.4rem 0; color: #2c3e50; font-size: 0.9rem; }
+    .summary-line.total { border-top: 2px solid #27ae60; margin-top: 0.5rem; padding-top: 0.75rem; font-size: 1.3rem; font-weight: 700; color: #27ae60; }
+
+    .payment-methods { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .payment-method { flex: 1; display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .payment-method:hover { border-color: #27ae60; }
+    .payment-method.selected { border-color: #27ae60; background: linear-gradient(135deg, rgba(39,174,96,0.1) 0%, rgba(34,153,84,0.1) 100%); }
+    .payment-method-icon { font-size: 1.5rem; }
+    .payment-method-name { font-weight: 600; color: #2c3e50; font-size: 0.95rem; }
+
+    .amount-section { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .amount-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .form-group input[readonly] { background: #e8f5e9; font-weight: 600; color: #27ae60; }
+    .form-group input.insufficient { background: #ffebee; color: #e74c3c; }
+
+    .btn-pay { width: 100%; padding: 1rem; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.3s; }
+    .btn-pay:hover { opacity: 0.9; }
+    .btn-pay:disabled { background: #ccc; cursor: not-allowed; }
+
+    .error-message { margin-top: 0.75rem; padding: 0.6rem; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 6px; font-size: 0.85rem; display: none; }
+
+    .empty-state { text-align: center; padding: 2rem; color: #7f8c8d; }
+    .empty-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+
+    /* Modal Comprobante */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; border-radius: 12px; width: 95%; max-width: 600px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .modal-header { background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .modal-header h3 { font-size: 1.3rem; }
+    .modal-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+    .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 1rem 1.5rem; background: #f8f9fa; border-top: 1px solid #e0e0e0; display: flex; gap: 1rem; }
+    .btn-modal { flex: 1; padding: 0.8rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s; }
+    .btn-print { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
+    .btn-close-modal { background: #95a5a6; color: white; }
+
+    /* Comprobante para imprimir */
+    .comprobante { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3; max-width: 80mm; margin: 0 auto; }
+    .comprobante-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 0.8rem; margin-bottom: 0.8rem; }
+    .comprobante-header h2 { font-size: 16px; margin-bottom: 0.3rem; font-weight: bold; }
+    .comprobante-header .direccion { font-size: 10px; margin: 2px 0; }
+    .comprobante-header .ruc { font-size: 11px; margin: 4px 0; font-weight: bold; }
+    .comprobante-header .tipo { font-size: 15px; font-weight: bold; color: #000; margin: 8px 0 4px 0; border: 2px solid #000; padding: 4px; display: inline-block; }
+    .comprobante-header .numero { font-size: 13px; color: #000; font-weight: bold; margin-top: 4px; }
+    .comprobante-section { margin-bottom: 0.8rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #666; }
+    .comprobante-section h4 { font-size: 11px; margin-bottom: 0.4rem; color: #000; font-weight: bold; text-transform: uppercase; }
+    .comprobante-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 10px; }
+    .comprobante-row span:first-child { font-weight: 500; }
+    .comprobante-items { margin: 0.8rem 0; }
+    .comprobante-item { display: grid; grid-template-columns: 3fr 0.8fr 1fr 1.2fr; padding: 3px 0; border-bottom: 1px dotted #999; font-size: 10px; gap: 4px; }
+    .comprobante-item.header { font-weight: bold; border-bottom: 2px solid #000; text-transform: uppercase; }
+    .comprobante-item span { text-align: left; }
+    .comprobante-item span:nth-child(2), .comprobante-item span:nth-child(3), .comprobante-item span:nth-child(4) { text-align: right; }
+    .comprobante-totals { margin-top: 0.8rem; padding-top: 0.5rem; border-top: 2px solid #000; }
+    .comprobante-totals .comprobante-row { font-size: 11px; padding: 2px 0; }
+    .comprobante-totals .total-final { font-size: 14px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px double #000; padding: 4px 0; margin-top: 4px; }
+    .comprobante-footer { text-align: center; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px dashed #666; font-size: 10px; color: #333; }
+    .comprobante-footer p { margin: 3px 0; }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      #comprobanteImprimir, 
+      #comprobanteImprimir * {
+        visibility: visible;
+      }
+
+      #comprobanteImprimir {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+      }
+
+      .modal {
+        background: transparent !important;
+      }
+    }
+
+    @media (max-width: 968px) { 
+      .container { grid-template-columns: 1fr; }
+      .panel { height: auto; max-height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>💳 Gestión de Pagos</h1>
+      <a href="dashboard.html" class="btn-back">← Volver</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>📋 Pedidos Listos para Pagar</h2>
+      <div class="order-list" id="orderList">
+        <div class="empty-state">
+          <div class="empty-icon">⏳</div>
+          <p>Cargando pedidos...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>💰 Procesar Pago</h2>
+      <div id="paymentContent">
+        <div class="empty-state">
+          <div class="empty-icon">👈</div>
+          <p>Selecciona un pedido</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="comprobanteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Comprobante de Pago</h3>
+        <button class="modal-close" onclick="cerrarModalComprobante()">×</button>
+      </div>
+      <div class="modal-body" id="comprobanteBody">
+        </div>
+      <div class="modal-footer">
+        <button class="btn-modal btn-print" onclick="imprimirComprobante()">🖨️ Imprimir Comprobante</button>
+        <button class="btn-modal btn-close-modal" onclick="cerrarModalComprobante()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pendingOrders = [];
+    let selectedOrder = null;
+    let selectedOrderId = null;
+    let selectedOrderTotal = 0;
+    let clientType = 'natural';
+    let paymentMethod = 'efectivo';
+    let comprobanteActual = null;
+
+    async function loadOrders() {
+      const orderList = document.getElementById('orderList');
+      try {
+        const response = await fetch('/api/pedidos/parapago');
+        if (!response.ok) throw new Error('Error al cargar pedidos');
+        pendingOrders = await response.json();
+        pendingOrders.forEach(order => { order.totalCalculado = calculateTotal(order); });
+
+        if (pendingOrders.length === 0) {
+          orderList.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No hay pedidos pendientes de pago</p></div>`;
+          return;
+        }
+
+        orderList.innerHTML = pendingOrders.map(order => {
+          const total = order.totalCalculado;
+          const icono = (order.mesa?.idMesa === 0) ? '📦' : '🪑';
+          const tipo = (order.mesa?.idMesa === 0) ? 'Para Llevar' : `Mesa ${order.mesa?.idMesa || '?'}`;
+          const items = order.detalles.map(d => `${d.producto?.nombre || '?'} x${d.cantidad}`).join(' • ');
+          return `
+            <div class="order-item ${selectedOrderId === order.idPedido ? 'selected' : ''}" onclick="selectOrder(${order.idPedido}, ${total})">
+              <div class="order-item-header">
+                <div class="order-id">Pedido #${order.idPedido}</div>
+                <div class="order-total">S/ ${total.toFixed(2)}</div>
+              </div>
+              <div class="order-details">
+                <span>${icono} ${tipo}</span>
+                <span>${order.detalles.length} items</span>
+              </div>
+              <div class="order-items-summary">${items}</div>
+            </div>`;
+        }).join('');
+      } catch (error) {
+        orderList.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${error.message}</p></div>`;
+      }
+    }
+
+    // --- AQUÍ ESTÁ LA MODIFICACIÓN ---
+    function calculateTotal(order) {
+      if (!order?.detalles) return 0;
+      const subtotal = order.detalles.reduce((sum, item) => sum + (item.precioUnitario || 0) * item.cantidad, 0);
+      const totalExacto = subtotal + (subtotal * 0.18);
+      // Redondeo hacia arriba al primer decimal (0.10) a favor del negocio
+      return Math.ceil(totalExacto * 10) / 10;
+    }
+    // ---------------------------------
+
+    function selectOrder(orderId, total) {
+      selectedOrderId = orderId;
+      selectedOrderTotal = total;
+      selectedOrder = pendingOrders.find(o => o.idPedido === orderId);
+      clientType = 'natural';
+      paymentMethod = 'efectivo';
+      loadOrders();
+      showPaymentForm();
+    }
+
+    function showPaymentForm() {
+      if (!selectedOrderId) return;
+      const tipo = (selectedOrder.mesa?.idMesa === 0) ? 'Para Llevar' : `Mesa ${selectedOrder.mesa?.idMesa || '?'}`;
+      
+      document.getElementById('paymentContent').innerHTML = `
+        <div class="client-type-section">
+          <label>Tipo de Cliente</label>
+          <div class="radio-group">
+            <div class="radio-option ${clientType === 'natural' ? 'selected' : ''}" onclick="setClientType('natural')">
+              <input type="radio" name="clientType" value="natural" ${clientType === 'natural' ? 'checked' : ''}>
+              <span>Cliente Natural</span>
+            </div>
+            <div class="radio-option ${clientType === 'juridico' ? 'selected' : ''}" onclick="setClientType('juridico')">
+              <input type="radio" name="clientType" value="juridico" ${clientType === 'juridico' ? 'checked' : ''}>
+              <span>Cliente Jurídico</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="client-form">
+          <h4>${clientType === 'natural' ? 'Datos del Cliente' : 'Datos de la Empresa'}</h4>
+          ${clientType === 'natural' ? `
+            <div class="form-row single">
+              <div class="form-group">
+                <label>DNI *</label>
+                <input type="text" id="dni" maxlength="8" placeholder="8 dígitos">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Nombre *</label><input type="text" id="nombre" placeholder="Nombre"></div>
+              <div class="form-group"><label>Apellido *</label><input type="text" id="apellido" placeholder="Apellido"></div>
+            </div>
+          ` : `
+            <div class="form-row single">
+              <div class="form-group">
+                <label>RUC *</label>
+                <input type="text" id="ruc" maxlength="11" placeholder="11 dígitos">
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label>Razón Social *</label>
+                <input type="text" id="razon" placeholder="Razón Social">
+              </div>
+            </div>
+          `}
+        </div>
+
+        <div class="payment-summary">
+          <div class="summary-line">
+            <span><strong>Pedido #${selectedOrderId}</strong></span>
+            <span>${tipo}</span>
+          </div>
+          <div class="summary-line total">
+            <span>TOTAL</span>
+            <span>S/ ${selectedOrderTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div class="payment-methods">
+          <div class="payment-method ${paymentMethod === 'efectivo' ? 'selected' : ''}" onclick="setPaymentMethod('efectivo')">
+            <div class="payment-method-icon">💵</div>
+            <div class="payment-method-name">Efectivo</div>
+          </div>
+          <div class="payment-method ${paymentMethod === 'electronico' ? 'selected' : ''}" onclick="setPaymentMethod('electronico')">
+            <div class="payment-method-icon">💳</div>
+            <div class="payment-method-name">Electrónico</div>
+          </div>
+        </div>
+
+        <div class="amount-section" id="amountSection" style="${paymentMethod === 'electronico' ? 'display:none;' : ''}">
+          <div class="amount-row">
+            <div class="form-group">
+              <label>Monto Recibido *</label>
+              <input type="number" id="montoPagado" placeholder="0.00" step="0.01" min="0" oninput="calculateChange()">
+            </div>
+            <div class="form-group">
+              <label>Vuelto</label>
+              <input type="text" id="vuelto" value="S/ 0.00" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <button class="btn-pay" id="btnPay" onclick="processPayment()" disabled>
+          💰 Procesar Pago - S/ ${selectedOrderTotal.toFixed(2)}
+        </button>
+      `;
+      setTimeout(() => {
+        const firstInput = document.getElementById(clientType === 'natural' ? 'dni' : 'ruc');
+        if (firstInput) firstInput.focus();
+      }, 100);
+    }
+
+    function setClientType(type) {
+      clientType = type;
+      showPaymentForm();
+    }
+
+    function setPaymentMethod(method) {
+      if (method === 'electronico') {
+        alert('⚠️ El pago electrónico aún no está implementado.');
+        return;
+      }
+      paymentMethod = method;
+      showPaymentForm();
+    }
+
+    function calculateChange() {
+      const montoInput = document.getElementById('montoPagado');
+      const vueltoInput = document.getElementById('vuelto');
+      const btnPay = document.getElementById('btnPay');
+      const errorMsg = document.getElementById('errorMessage');
+      const monto = parseFloat(montoInput.value) || 0;
+      const vuelto = monto - selectedOrderTotal;
+
+      if (monto < selectedOrderTotal) {
+        montoInput.classList.add('error');
+        vueltoInput.classList.add('insufficient');
+        vueltoInput.value = 'Monto insuficiente';
+        btnPay.disabled = true;
+        errorMsg.textContent = `Falta S/ ${(selectedOrderTotal - monto).toFixed(2)}`;
+        errorMsg.style.display = 'block';
+      } else {
+        montoInput.classList.remove('error');
+        vueltoInput.classList.remove('insufficient');
+        vueltoInput.value = `S/ ${vuelto.toFixed(2)}`;
+        btnPay.disabled = false;
+        errorMsg.style.display = 'none';
+      }
+    }
+
+    async function processPayment() {
+      const btnPay = document.getElementById('btnPay');
+      let pagoData = {
+        idPedido: selectedOrderId,
+        idMetodoPago: 1,
+        montoRecibido: parseFloat(document.getElementById('montoPagado')?.value) || 0
+      };
+
+      if (clientType === 'natural') {
+        const dni = document.getElementById('dni').value.trim();
+        const nombre = document.getElementById('nombre').value.trim();
+        const apellido = document.getElementById('apellido').value.trim();
+        if (!dni || dni.length !== 8) { showError('DNI debe tener 8 dígitos'); return; }
+        if (!nombre) { showError('Nombre obligatorio'); return; }
+        if (!apellido) { showError('Apellido obligatorio'); return; }
+        pagoData.dni = dni;
+        pagoData.nombre = nombre;
+        pagoData.apellido = apellido;
+        pagoData.ruc = null;
+        pagoData.razon = null;
+      } else {
+        const ruc = document.getElementById('ruc').value.trim();
+        const razon = document.getElementById('razon').value.trim();
+        if (!ruc || ruc.length !== 11) { showError('RUC debe tener 11 dígitos'); return; }
+        if (!razon) { showError('Razón social obligatoria'); return; }
+        pagoData.ruc = ruc;
+        pagoData.razon = razon;
+        pagoData.dni = null;
+        pagoData.nombre = null;
+        pagoData.apellido = null;
+      }
+
+      if (pagoData.montoRecibido < selectedOrderTotal) {
+        showError('Monto insuficiente');
+        return;
+      }
+
+      btnPay.disabled = true;
+      btnPay.textContent = 'Procesando...';
+
+      try {
+        const response = await fetch('/api/pagos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pagoData)
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          await mostrarComprobante(result.idComprobante, pagoData.montoRecibido);
+          resetPaymentPanel();
+          loadOrders();
+        } else {
+          showError(result.error || 'Error al procesar pago');
+          btnPay.disabled = false;
+          btnPay.textContent = `💰 Procesar Pago - S/ ${selectedOrderTotal.toFixed(2)}`;
+        }
+      } catch (error) {
+        showError('Error de conexión');
+        btnPay.disabled = false;
+        btnPay.textContent = `💰 Procesar Pago - S/ ${selectedOrderTotal.toFixed(2)}`;
+      }
+    }
+
+    async function mostrarComprobante(idComprobante, montoRecibido) {
+      try {
+        const response = await fetch(`/api/comprobantes/${idComprobante}`);
+        if (!response.ok) throw new Error('Error al cargar comprobante');
+        comprobanteActual = await response.json();
+
+        const vuelto = montoRecibido - comprobanteActual.total;
+        const fechaFormateada = new Date(comprobanteActual.fechaEmision).toLocaleString('es-PE');
+        const serie = String(comprobanteActual.idComprobante).padStart(4, '0').substring(0, 4);
+        const correlativo = String(comprobanteActual.idComprobante).padStart(8, '0');
+        const tipoDoc = comprobanteActual.tipoComprobante === 'BOLETA' ? 'BOLETA DE VENTA ELECTRÓNICA' : 'FACTURA ELECTRÓNICA';
+        const serieCompleta = comprobanteActual.tipoComprobante === 'BOLETA' ? `B${serie}-${correlativo}` : `F${serie}-${correlativo}`;
+
+        document.getElementById('comprobanteBody').innerHTML = `
+          <div class="comprobante" id="comprobanteImprimir">
+            <div class="comprobante-header">
+              <h2>RESTAURANTE CARLONCHO</h2>
+              <p class="direccion">Av. América Sur - Trujillo, La Libertad</p>
+              <p class="direccion">Teléfono: (044) 123-4567</p>
+              <p class="ruc">RUC: 20123456789</p>
+              <div class="tipo">${tipoDoc}</div>
+              <div class="numero">${serieCompleta}</div>
+            </div>
+
+            <div class="comprobante-section">
+              <h4>Datos de Emisión</h4>
+              <div class="comprobante-row"><span>Fecha de Emisión:</span><span>${fechaFormateada}</span></div>
+              <div class="comprobante-row"><span>Tipo de Moneda:</span><span>SOLES</span></div>
+              <div class="comprobante-row"><span>Pedido N°:</span><span>${comprobanteActual.idPedido}</span></div>
+              <div class="comprobante-row"><span>Mesa:</span><span>${comprobanteActual.mesa}</span></div>
+            </div>
+
+            <div class="comprobante-section">
+              <h4>${comprobanteActual.dni ? 'Señor(es)' : 'Razón Social'}</h4>
+              ${
+                comprobanteActual.dni
+                  ? `
+                <div class="comprobante-row"><span>Cliente:</span><span>${comprobanteActual.nombre} ${comprobanteActual.apellido}</span></div>
+                <div class="comprobante-row"><span>DNI:</span><span>${comprobanteActual.dni}</span></div>
+              `
+                  : `
+                <div class="comprobante-row"><span>Razón Social:</span><span>${comprobanteActual.razonSocial}</span></div>
+                <div class="comprobante-row"><span>RUC:</span><span>${comprobanteActual.ruc}</span></div>
+              `
+              }
+              <div class="comprobante-row"><span>Dirección del Cliente:</span><span>Trujillo, Perú</span></div>
+            </div>
+
+            <div class="comprobante-items">
+              <div class="comprobante-item header">
+                <span>Descripción</span><span>Cant.</span><span>P. Unit.</span><span>Importe</span>
+              </div>
+              ${
+                comprobanteActual.items.map(item => `
+                  <div class="comprobante-item">
+                    <span>${item.nombreProducto}</span>
+                    <span>${item.cantidad.toFixed(2)}</span>
+                    <span>${item.precioUnitario.toFixed(2)}</span>
+                    <span>${item.subtotal.toFixed(2)}</span>
+                  </div>
+                `).join('')
+              }
+            </div>
+
+            <div class="comprobante-totals">
+              <div class="comprobante-row"><span>Op. Gravada:</span><span>S/ ${comprobanteActual.subtotal.toFixed(2)}</span></div>
+              <div class="comprobante-row"><span>IGV (18%):</span><span>S/ ${comprobanteActual.igv.toFixed(2)}</span></div>
+              <div class="comprobante-row"><span>ICBPER:</span><span>S/ 0.00</span></div>
+              <div class="comprobante-row total-final"><span>IMPORTE TOTAL:</span><span>S/ ${comprobanteActual.total.toFixed(2)}</span></div>
+            </div>
+
+            <div class="comprobante-section" style="border: none; margin-top: 0.5rem;">
+              <div class="comprobante-row"><span>Método de Pago:</span><span>${comprobanteActual.metodoPago}</span></div>
+              <div class="comprobante-row"><span>Monto Recibido:</span><span>S/ ${montoRecibido.toFixed(2)}</span></div>
+              <div class="comprobante-row"><span>Vuelto:</span><span>S/ ${vuelto.toFixed(2)}</span></div>
+            </div>
+
+            <div class="comprobante-footer">
+              <p>Esta es una representación impresa de la ${comprobanteActual.tipoComprobante}</p>
+              <p>generada en el Sistema de CARLONCHO.</p>
+              <p style="margin-top: 8px;">¡Gracias por su preferencia!</p>
+              <p>Vuelva pronto</p>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('comprobanteModal').classList.add('active');
+      } catch (error) {
+        alert('No se pudo cargar el comprobante generado.');
+      }
+    }
+
+    function imprimirComprobante() {
+      const comprobante = document.getElementById('comprobanteImprimir');
+      if (!comprobante) return;
+      window.print();
+    }
+
+    function cerrarModalComprobante() {
+      const modal = document.getElementById('comprobanteModal');
+      modal.classList.remove('active');
+    }
+
+    function showError(msg) {
+      const errorMsg = document.getElementById('errorMessage');
+      if (!errorMsg) return;
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+
+    function resetPaymentPanel() {
+      selectedOrderId = null;
+      selectedOrderTotal = 0;
+      selectedOrder = null;
+      clientType = 'natural';
+      paymentMethod = 'efectivo';
+      document.getElementById('paymentContent').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">👈</div>
+          <p>Selecciona un pedido de la lista</p>
+        </div>
+      `;
+    }
+
+    document.getElementById('comprobanteModal').addEventListener('click', (e) => {
+      if (e.target.id === 'comprobanteModal') {
+        cerrarModalComprobante();
+      }
+    });
+
+    window.onload = loadOrders;
+    setInterval(loadOrders, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administración - Sistema de Restaurante</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+
+    .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;}
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s;}
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; background: white; padding: 0.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+    .tab { flex: 1; padding: 1rem; background: transparent; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; color: #666;}
+    .tab:hover { background: #f8f9fa; }
+    .tab.active { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .panel { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .panel-header h2 { color: #2c3e50; font-size: 1.3rem; }
+    .btn-primary { padding: 0.7rem 1.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s;}
+    .btn-primary:hover { opacity: 0.9; }
+
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8f9fa; padding: 1rem; text-align: left; font-weight: 600; color: #2c3e50; border-bottom: 2px solid #e0e0e0; }
+    td { padding: 1rem; border-bottom: 1px solid #f0f0f0; color: #34495e; }
+    tr:hover { background: #f8f9fa; }
+
+    .badge { display: inline-block; padding: 0.3rem 0.7rem; border-radius: 12px; font-size: 0.85rem; font-weight: 600; }
+    .badge-disponible { background: #d1ecf1; color: #0c5460; }
+    .badge-agotado { background: #fff3cd; color: #856404; }
+
+    .btn-action { padding: 0.4rem 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; margin: 0 0.25rem; transition: opacity 0.3s; }
+    .btn-edit { background: #3498db; color: white; }
+    .btn-action:hover { opacity: 0.8; }
+
+    .table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .table-card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.07); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; border-left: 5px solid #27ae60; transition: transform 0.3s, box-shadow 0.3s; }
+    .table-card.inactive { border-left-color: #e74c3c; }
+    /* Estilo especial para la Mesa 0 */
+    .table-card.system-table { border-left-color: #667eea; background: #f8f9fa; }
+    .table-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+    .table-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .table-card-header h3 { font-size: 1.8rem; color: #2c3e50; }
+    .table-status { padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; color: #ffffff; }
+    .status-disponible { background-color: #27ae60; }
+    .status-inactiva { background-color: #e74c3c; }
+    .status-sistema { background-color: #667eea; } /* Color para Mesa 0 */
+    .table-card-body { min-height: 20px; }
+    .table-card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid #f0f0f0; }
+    .table-card-footer p { font-size: 0.85rem; color: #555; font-style: italic; }
+    .table-card-footer .btn { padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h3 { color: #2c3e50; font-size: 1.3rem; }
+    .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #34495e; font-weight: 500; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.7rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; transition: border-color 0.3s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #f093fb; }
+    .form-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .btn-secondary { flex: 1; padding: 0.7rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-submit { flex: 1; padding: 0.7rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+    .photo-upload-container { border: 2px dashed #e0e0e0; border-radius: 8px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.3s; background: #f8f9fa; }
+    .photo-upload-container:hover { border-color: #f093fb; background: #fff; }
+    .photo-upload-container.has-image { border-style: solid; border-color: #f093fb; }
+    .photo-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 1rem; display: none; }
+    .photo-preview.show { display: block; }
+    .upload-icon { font-size: 3rem; color: #bbb; margin-bottom: 0.5rem; }
+    .upload-text { color: #666; font-size: 0.9rem; }
+    .photo-actions { margin-top: 1rem; display: none; }
+    .photo-actions.show { display: block; }
+    .btn-remove-photo { background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+    .btn-remove-photo:hover { opacity: 0.8; }
+
+    @media (max-width: 768px) {
+      .tabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>⚙ Panel de Administración</h1>
+      <a href="dashboard.html" class="btn-back">← Volver</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('Menu', event)">🍽 Menú</button>
+      <button class="tab" onclick="switchTab('Mesas', event)">🪑 Mesas</button>
+      <button class="tab" id="tabUsuariosButton" onclick="switchTab('Usuarios', event)">👤 Usuarios</button>
+    </div>
+
+    <div id="tabMenu" class="tab-content active">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Gestión del Menú</h2>
+          <button class="btn-primary" onclick="openMenuModal()">➕ Nuevo Producto</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th><th>Categoría</th><th>Precio</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="menuTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabMesas" class="tab-content">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Gestión de Mesas</h2>
+                <button class="btn-primary" onclick="openMesaModal()">➕ Nueva Mesa</button>
+            </div>
+            <div class="table-grid" id="tableGrid"></div>
+        </div>
+    </div>
+  </div>
+
+  <div id="tabUsuarios" class="tab-content">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Gestión de Usuarios</h2>
+        <button class="btn-primary" onclick="openUsuarioModal()">➕ Nuevo Usuario</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Nombre completo</th>
+              <th>DNI</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usuariosTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="menuModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="menuModalTitle">Nuevo Productoo</h3>
+        <button class="btn-close" onclick="closeMenuModal()">×</button>
+      </div>
+      <form id="menuForm" onsubmit="saveMenuItem(event)">
+        <div class="form-group">
+          <label>Foto del Producto</label>
+          <div class="photo-upload-container" id="photoUploadContainer" onclick="document.getElementById('photoInput').click()">
+            <div id="uploadPlaceholder">
+              <div class="upload-icon"></div>
+              <div class="upload-text">Haz clic para seleccionar una foto</div>
+              <div class="upload-text" style="font-size: 0.8rem; margin-top: 0.5rem; color: #999;">JPG, PNG o WEBP (máx. 5MB)</div>
+            </div>
+            <img id="photoPreview" class="photo-preview" alt="Vista previa">
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)">
+          <div class="photo-actions" id="photoActions">
+            <button type="button" class="btn-remove-photo" onclick="removePhoto(event)">🗑 Eliminar foto</button>
+          </div>
+        </div>
+        <div class="form-group"> <label>Nombre</label> <input type="text" name="nombre" required maxlength="50" oninput="sanitizeNombrePlatillo(this)"> </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select name="categoria" required>
+            <option value="" disabled selected>Seleccione</option>
+            <option value="entradas">Entradas</option>
+            <option value="platos principales">Platos Principales</option>
+            <option value="postres">Postres</option>
+            <option value="bebidas">Bebidas</option>
+          </select>
+        </div>
+        <div class="form-group"> <label>Precio (S/)</label> <input type="text" name="precio" required inputmode="decimal" placeholder="0.00" oninput="sanitizePrecio(this)"> </div>
+        <div class="form-group"> <label>Descripción</label> <textarea name="descripcion" rows="3" required maxlength="150" oninput="sanitizeDescripcion(this)"></textarea> </div>
+        <div class="form-group"> <label>Cantidad</label> <input type="text" name="cantidad" required inputmode="numeric" pattern="\d*" maxlength="2" value="0" oninput="sanitizeCantidadPlatillo(this)"> </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select name="disponible" required>
+            <option value="true">Disponible</option>
+            <option value="false">Agotado</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeMenuModal()">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="mesaModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="mesaModalTitle">Nueva Mesa</h3>
+        <button class="btn-close" onclick="closeMesaModal()">×</button>
+      </div>
+      <form id="mesaForm" onsubmit="saveMesa(event)">
+        <div class="form-group">
+          <label for="mesaNumber">Número de Mesa (ID)</label>
+          <input type="text" id="mesaNumber" required inputmode="numeric" pattern="\\d*" maxlength="2" placeholder="1-30" oninput="sanitizeMesaId(this)">
+        </div>
+        <div class="form-group">
+          <label for="mesaState">Estado</label>
+          <select id="mesaState" required>
+            <option value="Disponible">Disponible</option>
+            <option value="Inactiva">Inactiva</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeMesaModal()">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="usuarioModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="usuarioModalTitle">Nuevo Usuario</h3>
+        <button class="btn-close" onclick="closeUsuarioModal()">×</button>
+      </div>
+      <form id="usuarioForm" onsubmit="saveUsuario(event)">
+        <div class="form-group">
+          <label>Nombre de usuario (user)</label>
+          <input type="text" id="userField" required maxlength="50"
+                oninput="this.value = this.value.replace(/[^A-Za-z0-9._-]/g,'');">
+        </div>
+
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="passwordField" required minlength="8" maxlength="12">
+        </div>
+
+        <div class="form-group">
+          <label>Confirmar contraseña</label>
+          <input type="password" id="confirmPasswordField" required minlength="8" maxlength="12">
+        </div>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="nombreField" required maxlength="50"
+                oninput="validarSoloLetrasUsuario(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Apellido</label>
+          <input type="text" id="apellidoField" required maxlength="50"
+                oninput="validarSoloLetrasUsuario(this)">
+        </div>
+
+        <div class="form-group">
+          <label>DNI</label>
+          <input type="text" id="dniField" required maxlength="8" inputmode="numeric"
+                oninput="this.value = this.value.replace(/[^0-9]/g,'');">
+        </div>
+
+        <div class="form-group">
+          <label>Correo electrónico</label>
+          <input type="email" id="emailField" required maxlength="100"
+                oninput="validarEmail(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Rol</label>
+          <select id="rolSelect" required>
+            <option value="" disabled selected>Seleccione rol</option>
+            <option value="1">Administrador</option>
+            <option value="2">Cocinero</option>
+            <option value="3">Mesero</option>
+            <option value="4">Cajero</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeUsuarioModal()">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="usuarioEditModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Editar Usuario</h3>
+        <button class="btn-close" onclick="closeUsuarioEditModal()">×</button>
+      </div>
+      <form id="usuarioEditForm" onsubmit="saveEditUsuario(event)">
+        
+        <input type="hidden" id="editIdUser">
+
+        <div class="form-group">
+          <label>Nombre de usuario</label>
+          <input type="text" id="editUser" required>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input type="text" id="editNombre" required maxlength="50"
+                oninput="validarSoloLetrasUsuario(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Apellido</label>
+          <input type="text" id="editApellido" required maxlength="50"
+                oninput="validarSoloLetrasUsuario(this)">
+        </div>
+
+        <div class="form-group">
+          <label>DNI</label>
+          <input type="text" id="editDni" maxlength="8" required>
+        </div>
+
+        <div class="form-group">
+          <label>Correo</label>
+          <input type="email" id="editEmail" required maxlength="100"
+                oninput="validarEmail(this)">
+        </div>
+
+        <div class="form-group">
+          <label>Rol</label>
+          <select id="editRol" required>
+            <option value="1">Administrador</option>
+            <option value="2">Cocinero</option>
+            <option value="3">Mesero</option>
+            <option value="4">Cajero</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeUsuarioEditModal()">Cancelar</button>
+          <button type="submit" class="btn-submit">Guardar Cambios</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+
+<script>
+    // --- ESTADO GLOBAL Y CONFIGURACIÓN ---
+    const API_BASE_URL = "";
+    let editingMenuId = null;
+    let selectedPhotoFile = null;
+    let menuItems = []; 
+    let tables = []; // Almacenará las mesas traídas de la API
+    let editingMesaId = null;
+    let usuarios = [];
+
+    async function loadUsuarios(){
+      try {
+        const response = await fetch('/api/usuarios');
+        if (!response.ok) throw new Error("No se pudo obtener usuarios");
+
+        let usuarios = await response.json();
+
+        // ❗ FILTRAR: no mostrar administradores
+        usuarios = usuarios.filter(u => u.rol?.rol !== "Administrador");
+
+        const tbody = document.getElementById("usuariosTable");
+
+        tbody.innerHTML = usuarios.map(u => `
+          <tr>
+            <td>${u.user}</td>
+            <td>${u.nombre} ${u.apellido}</td>
+            <td>${u.dni}</td>
+            <td>${u.email}</td>
+            <td>${u.rol?.rol}</td>
+            <td>${u.estado}</td>
+            <td>
+              <button class="btn-action btn-edit" onclick="openEditUsuario('${u.idUser}')">✏ Editar</button>
+              ${
+                u.estado === "activo"
+                ? `<button class="btn-action" style="background:#e74c3c;color:white" onclick="cambiarEstadoUsuario('${u.idUser}', 'inactivo')">🔌</button>`
+                : `<button class="btn-action" style="background:#2ecc71;color:white" onclick="cambiarEstadoUsuario('${u.idUser}', 'activo')">⚡</button>`
+              }
+            </td>
+          </tr>
+        `).join('');
+
+      } catch (error) {
+        console.error(error);
+        alert("Error cargando usuarios");
+      }
+    }
+
+    function openUsuarioEditModal(idUser) {
+      const usuario = usuarios.find(u => u.idUser === idUser);
+      if (!usuario) return;
+
+      editingUsuarioId = idUser;
+
+      document.getElementById('usuarioModalTitle').textContent = "Editar Usuario";
+
+      document.getElementById('userField').value = usuario.user;
+      document.getElementById('nombreField').value = usuario.nombre;
+      document.getElementById('apellidoField').value = usuario.apellido;
+      document.getElementById('dniField').value = usuario.dni;
+      document.getElementById('emailField').value = usuario.email;
+      document.getElementById('rolSelect').value = usuario.rol.idRol;
+
+      // Ocultar campos de contraseña al editar
+      document.getElementById('passwordField').style.display = "none";
+      document.getElementById('confirmPasswordField').style.display = "none";
+
+      document.getElementById('usuarioModal').classList.add('active');
+    }
+
+    async function openEditUsuario(idUser) {
+      try {
+        const response = await fetch(`/api/usuarios/${idUser}`);
+        if (!response.ok) return alert("No se encontró el usuario");
+
+        const u = await response.json();
+
+        document.getElementById("editIdUser").value = u.idUser;
+        document.getElementById("editUser").value = u.user;
+        document.getElementById("editNombre").value = u.nombre;
+        document.getElementById("editApellido").value = u.apellido;
+        document.getElementById("editDni").value = u.dni;
+        document.getElementById("editEmail").value = u.email;
+        document.getElementById("editRol").value = u.rol.idRol;
+
+        document.getElementById("usuarioEditModal").classList.add("active");
+
+      } catch (error) {
+        console.error(error);
+        alert("Error cargando datos del usuario");
+      }
+    }
+
+    async function saveEditUsuario(event) {
+      event.preventDefault();
+
+      if(!confirm("¿Guardar cambios?")) return;
+      const id = document.getElementById("editIdUser").value;
+
+      const data = {
+      user: document.getElementById("editUser").value.trim(),
+      nombre: document.getElementById("editNombre").value.trim(),
+      apellido: document.getElementById("editApellido").value.trim(),
+      dni: document.getElementById("editDni").value.trim(),
+      email: document.getElementById("editEmail").value.trim(),
+      rol: { idRol: parseInt(document.getElementById("editRol").value) }
+    };
+
+    try {
+      const response = await fetch(`/api/usuarios/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(result.error || "Error actualizando usuario");
+        return;
+      }
+
+      alert("Usuario actualizado correctamente");
+      closeUsuarioEditModal();
+      loadUsuarios();
+
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión al actualizar el usuario");
+    }
+
+    }
+
+    function closeUsuarioEditModal() {
+      document.getElementById("usuarioEditModal").classList.remove("active");
+    }
+
+    async function cambiarEstadoUsuario(idUser, nuevoEstado) {
+      if (!confirm(`¿Cambiar estado a ${nuevoEstado}?`)) return;
+
+      try {
+        const response = await fetch(`/api/usuarios/${idUser}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: nuevoEstado })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          alert(result.error || "Error al cambiar estado");
+          return;
+        }
+
+        alert("Estado actualizado correctamente");
+        loadUsuarios();
+
+      } catch (error) {
+        console.error(error);
+        alert("No se pudo actualizar el estado del usuario");
+      }
+    }
+
+
+    function openUsuarioModal() {
+      document.getElementById('usuarioModalTitle').textContent = 'Nuevo Usuario';
+      document.getElementById('usuarioForm').reset();
+      document.getElementById('usuarioModal').classList.add('active');
+    }
+
+    function closeUsuarioModal() {
+      document.getElementById('usuarioModal').classList.remove('active');
+    }
+
+    async function saveUsuario(event) {
+      event.preventDefault();
+      if (editingUsuarioId) return updateUsuario(event);
+      const user = document.getElementById('userField').value.trim();
+      const password = document.getElementById('passwordField').value.trim();
+      const confirmPassword = document.getElementById('confirmPasswordField').value.trim();
+      const nombre = document.getElementById('nombreField').value.trim();
+      const apellido = document.getElementById('apellidoField').value.trim();
+      const dni = document.getElementById('dniField').value.trim();
+      const email = document.getElementById('emailField').value.trim();
+      const rolId = document.getElementById('rolSelect').value;
+
+      // 1. Todos los campos obligatorios
+      if (!user || !password || !confirmPassword || !nombre || !apellido || !dni || !email || !rolId) {
+        alert('Todos los campos obligatorios deben estar completos');
+        return;
+      }
+
+      // 2. Passwords iguales
+      if (password !== confirmPassword) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+
+      // 3. Validar formato de contraseña (mismas reglas que backend)
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,12}$/;
+      if (!passwordRegex.test(password)) {
+        alert('La contraseña debe tener entre 8 y 12 caracteres, al menos una mayúscula y al menos un número, sin caracteres especiales.');
+        return;
+      }
+
+      // 4. DNI 8 dígitos
+      if (!/^\d{8}$/.test(dni)) {
+        alert('El DNI debe tener exactamente 8 dígitos numéricos');
+        return;
+      }
+
+      const usuarioData = {
+        user: user,
+        password: password,
+        nombre: nombre,
+        apellido: apellido,
+        dni: dni,
+        email: email,
+        // El estado no es necesario enviarlo, pero si quieres:
+        estado: "activo",
+        rol: { idRol: parseInt(rolId, 10) }  // 1=Admin,2=Cocinero,3=Mesero,4=Cajero
+      };
+
+      try {
+        const response = await fetch('/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(usuarioData)
+        });
+
+        if (response.ok) {
+          alert('Usuario creado exitosamente');
+          closeUsuarioModal();
+          loadUsuarios();
+        } else {
+          const err = await response.json().catch(() => ({}));
+          alert(err.error || 'Error al crear el usuario. Revisa que el usuario y el correo no estén duplicados.');
+        }
+      } catch (error) {
+        console.error('Error de red al crear usuario:', error);
+        alert('No se pudo conectar con el servidor para crear el usuario');
+      }
+    }
+
+    // --- GESTIÓN DE MENÚ (CONECTADO AL BACKEND) ---
+    // (Esta sección no tiene cambios)
+    async function loadMenu() {
+      try {
+        const response = await fetch(`/api/productos`);
+        menuItems = await response.json();
+        const tableBody = document.getElementById("menuTable");
+        tableBody.innerHTML = menuItems.map(item => `
+          <tr>
+            <td><strong>${item.nombre}</strong></td>
+            <td>${item.categoria.nombre}</td>
+            <td>S/ ${item.precio.toFixed(2)}</td>
+            <td>
+              <span class="badge badge-${item.cantidad > 0 ? 'disponible' : 'agotado'}">
+                ${item.cantidad > 0 ? 'Disponible' : 'Agotado'}
+              </span>
+            </td>
+            <td><button class="btn-action btn-edit" onclick="editMenuItem('${item.nombre}')">✏ Editar</button></td>
+          </tr>
+        `).join("");
+      } catch (error) {
+        console.error("Error al cargar el menú:", error);
+        alert("No se pudo cargar el menú. Revisa la consola para más detalles.");
+      }
+    }
+    async function saveMenuItem(event) {
+      event.preventDefault();
+      const form = event.target;
+      const nombrePlatillo = (form.nombre.value || '').replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '').slice(0, 50).trim();
+      form.nombre.value = nombrePlatillo;
+      const precioStr = (form.precio.value || '').trim();
+      // Validación: hasta 3 enteros y 2 decimales, solo punto
+      const precioRegex = /^(?:\d{1,3})(?:\.\d{0,2})?$/;
+      if (!precioRegex.test(precioStr)) { alert('Precio inválido. Use hasta 3 dígitos enteros y 2 decimales (ej. 9.99).'); return; }
+      const descripcionVal = (form.descripcion.value || '').replace(/[^0-9A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\p{P}]/gu, '').slice(0, 150).trim();
+      form.descripcion.value = descripcionVal;
+      const cantidadStr = (form.cantidad.value || '').replace(/[^0-9]/g, '').slice(0, 2);
+      if (cantidadStr === '') { alert('Ingrese una cantidad válida'); return; }
+      form.cantidad.value = cantidadStr;
+      const formData = new FormData();
+      if (selectedPhotoFile) formData.append('imagen', selectedPhotoFile);
+      formData.append('nombre', nombrePlatillo);
+      formData.append('categoria', form.categoria.value);
+      formData.append('precio', precioStr);
+      formData.append('descripcion', form.descripcion.value);
+      formData.append('cantidadDisponible', form.cantidad.value);
+      const url = editingMenuId 
+        ? `/api/productos/editar/${encodeURIComponent(editingMenuId)}`
+        : `/api/productos`;
+      const method = editingMenuId ? "PUT" : "POST";
+      try {
+        const response = await fetch(url, { method, body: formData });
+        if (response.ok) {
+          alert(`Producto ${editingMenuId ? 'actualizado' : 'creado'} exitosamente`);
+          loadMenu();
+          closeMenuModal();
+        } else {
+          const err = await response.json();
+          alert("Error: " + (err.error || "No se pudo guardar el producto"));
+        }
+      } catch (error) {
+        console.error("Error al guardar el producto:", error);
+        alert("Error al guardar. Verifica tu conexión con el servidor.");
+      }
+    }
+    async function editMenuItem(nombreExistente) {
+      try {
+        const response = await fetch(`/api/productos/buscar/${encodeURIComponent(nombreExistente)}`);
+        if (!response.ok) { alert("No se encontró el producto"); return; }
+        const producto = await response.json();
+        editingMenuId = producto.nombre;
+        const form = document.getElementById('menuForm');
+        form.nombre.value = producto.nombre;
+        form.categoria.value = producto.categoria.nombre;
+        form.precio.value = producto.precio;
+        form.descripcion.value = producto.descripcion;
+        form.cantidad.value = producto.cantidad || 0;
+        if (producto.imagenUrl) {
+          const preview = document.getElementById('photoPreview');
+          const placeholder = document.getElementById('uploadPlaceholder');
+          const container = document.getElementById('photoUploadContainer');
+          const actions = document.getElementById('photoActions');
+          preview.src = `${API_BASE_URL}${producto.imagenUrl}`;
+          preview.classList.add('show');
+          placeholder.style.display = 'none';
+          container.classList.add('has-image');
+          actions.classList.add('show');
+        }
+        document.getElementById('menuModalTitle').textContent = `Editar Producto: ${producto.nombre}`;
+        document.getElementById('menuModal').classList.add('active');
+      } catch (error) { console.error("Error al cargar el producto:", error); }
+    }
+    function openMenuModal() {
+      editingMenuId = null;
+      selectedPhotoFile = null;
+      document.getElementById('menuModalTitle').textContent = 'Nuevo Producto';
+      document.getElementById('menuForm').reset();
+      removePhoto({ stopPropagation: () => {} });
+      document.getElementById('menuModal').classList.add('active');
+    }
+    function closeMenuModal() {
+      document.getElementById('menuModal').classList.remove('active');
+      removePhoto({ stopPropagation: () => {} });
+    }
+    function handlePhotoSelect(event) {
+        const file = event.target.files[0];
+        if (!file || !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+            alert('Archivo no válido (debe ser imagen de < 5MB)'); return;
+        }
+        selectedPhotoFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const preview = document.getElementById('photoPreview');
+            document.getElementById('uploadPlaceholder').style.display = 'none';
+            document.getElementById('photoUploadContainer').classList.add('has-image');
+            document.getElementById('photoActions').classList.add('show');
+            preview.src = e.target.result;
+            preview.classList.add('show');
+        };
+        reader.readAsDataURL(file);
+    }
+    function removePhoto(event) {
+        event.stopPropagation();
+        selectedPhotoFile = null;
+        document.getElementById('photoInput').value = '';
+        document.getElementById('photoPreview').src = '';
+        document.getElementById('photoPreview').classList.remove('show');
+        document.getElementById('uploadPlaceholder').style.display = 'block';
+        document.getElementById('photoUploadContainer').classList.remove('has-image');
+        document.getElementById('photoActions').classList.remove('show');
+    }
+
+    async function updateUsuario() {
+      if (!confirm("¿Guardar cambios del usuario?")) return;
+
+      const user = document.getElementById('userField').value.trim();
+      const nombre = document.getElementById('nombreField').value.trim();
+      const apellido = document.getElementById('apellidoField').value.trim();
+      const dni = document.getElementById('dniField').value.trim();
+      const email = document.getElementById('emailField').value.trim();
+      const rol = document.getElementById('rolSelect').value;
+
+      if (!user || !nombre || !apellido || !dni || !email || !rol) {
+        alert("Todos los campos obligatorios deben estar completos");
+        return;
+      }
+
+      const usuarioData = {
+        user,
+        nombre,
+        apellido,
+        dni,
+        email,
+        rol: { idRol: parseInt(rol) }
+      };
+
+      try {
+        const response = await fetch(`/api/usuarios/${editingUsuarioId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(usuarioData)
+        });
+
+        if (response.ok) {
+          alert("Usuario actualizado correctamente");
+          closeUsuarioModal();
+          loadUsuarios();
+        } else {
+          const err = await response.json();
+          alert(err.error || "Error al actualizar usuario");
+        }
+
+      } catch (error) {
+        alert("Error de conexión con el servidor");
+      }
+    }
+
+
+
+    // --- INICIO: GESTIÓN DE MESAS MODIFICADA ---
+    async function loadMesas() {
+      try {
+        const response = await fetch(`/api/mesas`);
+        if (!response.ok) throw new Error('No se pudo obtener la lista de mesas.');
+        
+        tables = await response.json(); 
+        const tableGrid = document.getElementById('tableGrid');
+        
+        // Ordenar mesas por ID
+        tableGrid.innerHTML = tables.sort((a, b) => a.idMesa - b.idMesa).map(mesa => {
+            
+            // Lógica para la Mesa 0 (Para Llevar)
+            if (mesa.idMesa === 0) {
+                return `
+                <div class="table-card system-table">
+                    <div class="table-card-header">
+                        <h3>Mesa 0</h3>
+                        <span class="table-status status-sistema">PARA LLEVAR</span>
+                    </div>
+                    <div class="table-card-footer">
+                        <p>Mesa de sistema. No se puede editar.</p>
+                    </div>
+                </div>
+                `;
+            }
+
+            // Lógica para todas las otras mesas
+            const statusClass = mesa.estado === 'Inactiva' ? 'status-inactiva' : 'status-disponible';
+            const cardClass = mesa.estado === 'Inactiva' ? 'inactive' : '';
+            return `
+            <div class="table-card ${cardClass}">
+                <div class="table-card-header">
+                    <h3>Mesa ${mesa.idMesa}</h3>
+                    <span class="table-status ${statusClass}">${mesa.estado}</span>
+                </div>
+                <div class="table-card-footer">
+                        <button class="btn-action btn-edit" onclick="openMesaModal(${mesa.idMesa})">✏️ Editar</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+      } catch (error) {
+        console.error("Error al cargar las mesas:", error);
+        alert("No se pudo conectar al servidor para cargar las mesas.");
+      }
+    }
+
+    function openMesaModal(idMesa = null) {
+      // Si se intenta editar la mesa 0, mostramos alerta y salimos.
+      if (idMesa === 0) {
+        alert('La "Mesa 0" es una mesa de sistema para pedidos "Para Llevar" y no se puede editar.');
+        return;
+      }
+
+      const modal = document.getElementById('mesaModal');
+      const modalTitle = document.getElementById('mesaModalTitle');
+      const form = document.getElementById('mesaForm');
+      const numberInput = document.getElementById('mesaNumber');
+      form.reset();
+      
+      if (idMesa) { // Editando una mesa existente
+        const mesa = tables.find(t => t.idMesa === idMesa);
+        if (!mesa) return;
+        
+        editingMesaId = idMesa;
+        modalTitle.textContent = `Editar Mesa ${mesa.idMesa}`;
+        numberInput.value = mesa.idMesa;
+        numberInput.disabled = true; // El ID no se debe cambiar
+        document.getElementById('mesaState').value = mesa.estado;
+      } else { // Creando una nueva mesa
+        editingMesaId = null;
+        modalTitle.textContent = 'Crear Nueva Mesa';
+        numberInput.disabled = false;
+        // Ponemos un placeholder para avisar al usuario
+        numberInput.placeholder = "El ID 0 está reservado para 'Para Llevar'";
+      }
+      modal.classList.add('active');
+    }
+
+    function closeMesaModal() {
+      document.getElementById('mesaModal').classList.remove('active');
+    }
+
+    async function saveMesa(event) {
+        event.preventDefault();
+        const numeroMesaStr = (document.getElementById('mesaNumber').value || '').replace(/[^0-9]/g, '');
+        if (!numeroMesaStr) { alert('Ingrese un número de mesa válido'); return; }
+        const numeroMesa = parseInt(numeroMesaStr, 10);
+        if (!(numeroMesa >= 1 && numeroMesa <= 30)) {
+            alert('El ID de mesa debe ser un entero entre 1 y 30.');
+            return;
+        }
+        const estadoMesa = document.getElementById('mesaState').value;
+        
+        const isEditing = editingMesaId !== null;
+
+        // Añadimos una validación para impedir crear la mesa 0
+        if (numeroMesa === 0 && !isEditing) {
+            alert("El ID 0 está reservado para el sistema 'Para Llevar'.\nPor favor, elija otro número de mesa.");
+            return;
+        }
+
+        const mesaData = {
+            idMesa: numeroMesa,
+            estado: estadoMesa
+        };
+
+        const url = isEditing 
+            ? `/api/mesas/${editingMesaId}` 
+            : `/api/mesas`;
+        
+        const method = isEditing ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mesaData)
+            });
+
+            if (response.ok) {
+                alert(`Mesa ${isEditing ? 'actualizada' : 'creada'} correctamente.`);
+                closeMesaModal();
+                loadMesas(); // Recargar las mesas para mostrar los cambios
+            } else {
+                alert('Error al guardar la mesa. Es posible que el ID ya exista.');
+            }
+        } catch (error) {
+            console.error('Error de red al guardar la mesa:', error);
+            alert('No se pudo conectar al servidor para guardar la mesa.');
+        }
+    }
+    // --- FIN: GESTIÓN DE MESAS MODIFICADA ---
+
+
+    // --- LÓGICA DE NAVEGACIÓN Y UTILIDADES ---
+    function switchTab(tabName, event) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(`tab${tabName}`).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    window.onload = () => {
+    const rol = localStorage.getItem('rol');
+
+    if (!rol) {
+      alert("Debes iniciar sesión primero.");
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Configurar visibilidad de pestaña Usuarios
+    configurarVisibilidadPorRol(rol);
+
+    // Cargar menú y mesas (todos los roles que llegan aquí pueden ver esto)
+    loadMenu();
+    loadMesas();
+
+    // Solo el Administrador puede ver y cargar usuarios
+    if (rol === 'Administrador') {
+      loadUsuarios();
+    }
+  };
+
+  function configurarVisibilidadPorRol(rol) {
+    const usuariosTabBtn = document.getElementById('tabUsuariosButton');
+    const usuariosTabContent = document.getElementById('tabUsuarios');
+
+    if (rol !== 'Administrador') {
+      // Ocultar la pestaña y el contenido
+      if (usuariosTabBtn) {
+        usuariosTabBtn.style.display = 'none';
+      }
+      if (usuariosTabContent) {
+        usuariosTabContent.style.display = 'none';
+      }
+    }
+}
+</script>
+<script>
+  // Nombre: solo letras (incluye tildes), ñ y espacios, max 50
+  function sanitizeNombrePlatillo(inputEl) {
+    const cleaned = inputEl.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '').slice(0, 50);
+    if (cleaned !== inputEl.value) inputEl.value = cleaned;
+  }
+  // Precio: hasta 3 enteros y 2 decimales, solo punto
+  function sanitizePrecio(inputEl) {
+    let v = inputEl.value.replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('').replace(/\./g, '');
+    const m = v.match(/^(\d{0,3})(?:\.(\d{0,2}))?/);
+    if (m) {
+      v = m[1] + (m[2] !== undefined ? '.' + m[2] : '');
+    } else {
+      v = '';
+    }
+    inputEl.value = v;
+  }
+  // Descripción: letras, números y signos de puntuación, max 150
+  function sanitizeDescripcion(inputEl) {
+    const cleaned = (inputEl.value || '').replace(/[^0-9A-Za-zÁÉÍÓÚáéíóúÑñÜü\s\p{P}]/gu, '').slice(0, 150);
+    if (cleaned !== inputEl.value) inputEl.value = cleaned;
+  }
+  // Cantidad: enteros, max 2 dígitos
+  function sanitizeCantidadPlatillo(inputEl) {
+    const cleaned = inputEl.value.replace(/[^0-9]/g, '').slice(0, 2);
+    if (cleaned !== inputEl.value) inputEl.value = cleaned;
+  }
+</script>
+<script>
+  // Sanitizador para ID de mesa: solo dígitos, máximo 2 caracteres, rango 0-30
+  function sanitizeMesaId(inputEl) {
+    let cleaned = inputEl.value.replace(/[^0-9]/g, '').slice(0, 2);
+    // Si tiene 2 dígitos, validar que no exceda 30
+    if (cleaned.length === 2) {
+      const num = parseInt(cleaned, 10);
+      if (num > 30) {
+        // Si excede 30, mantener solo el primer dígito si es válido, sino dejar vacío
+        const firstDigit = cleaned[0];
+        cleaned = (firstDigit === '3' || firstDigit === '0') ? firstDigit : '';
+      }
+    }
+    // Si tiene un solo dígito mayor a 3, no permitir (porque 4x, 5x, etc. exceden 30)
+    if (cleaned.length === 1 && parseInt(cleaned, 10) > 3) {
+      cleaned = cleaned[0] === '3' ? '3' : '';
+    }
+    if (cleaned !== inputEl.value) inputEl.value = cleaned;
+  }
+</script>
+<script>
+  // Función para validar nombres y apellidos: solo letras (incluyendo acentos, ñ, ü) y espacios
+  function validarSoloLetrasUsuario(input) {
+    const valorLimpio = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '');
+    if (valorLimpio !== input.value) {
+      input.value = valorLimpio;
+    }
+  }
+
+  // Función para validar email: permite caracteres especiales válidos para correos
+  // Permite: letras, números, puntos, guiones, guiones bajos, arrobas, y el signo +
+  function validarEmail(input) {
+    // Permitir caracteres válidos para emails: letras, números, @, ., -, _, +
+    // No restringir demasiado, dejar que el type="email" y el backend validen el formato completo
+    const valorLimpio = input.value.replace(/[^A-Za-z0-9@._+-]/g, '');
+    if (valorLimpio !== input.value) {
+      input.value = valorLimpio;
+    }
+  }
+</script>
+</body>
+</html>

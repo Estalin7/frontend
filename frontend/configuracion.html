@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Configuración - Sistema de Restaurante</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f5f7fa; min-height: 100vh; }
+
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);}
+    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;}
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .btn-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; text-decoration: none; transition: all 0.3s;}
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; display: grid; grid-template-columns: 250px 1fr; gap: 2rem; }
+
+    /* Sidebar */
+    .sidebar { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); height: fit-content; }
+    .sidebar h3 { color: #2c3e50; margin-bottom: 1rem; font-size: 1.1rem; }
+    .sidebar-menu { list-style: none; }
+    .sidebar-menu li { padding: 0.8rem 1rem; margin-bottom: 0.5rem; border-radius: 8px; cursor: pointer; transition: all 0.3s; color: #555; font-weight: 500; }
+    .sidebar-menu li:hover { background: #f8f9fa; }
+    .sidebar-menu li.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+
+    /* Panel de información */
+    .info-panel { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .info-panel h2 { color: #2c3e50; margin-bottom: 1.5rem; font-size: 1.4rem; }
+    .user-avatar { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 3rem; color: white; margin: 0 auto 2rem; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+    .info-item { padding: 1rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea; }
+    .info-label { font-size: 0.85rem; color: #7f8c8d; font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .info-value { font-size: 1.1rem; color: #2c3e50; font-weight: 600; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h3 { color: #2c3e50; font-size: 1.3rem; }
+    .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+    
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #34495e; font-weight: 500; }
+    
+    /* Input con botón de visualización */
+    .password-input-wrapper { position: relative; }
+    .password-input-wrapper input { width: 100%; padding: 0.7rem 2.5rem 0.7rem 0.7rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem; transition: border-color 0.3s; }
+    .password-input-wrapper input:focus { outline: none; border-color: #667eea; }
+    .password-input-wrapper input.error { border-color: #e74c3c; }
+    .toggle-password { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #999; transition: color 0.3s; }
+    .toggle-password:hover { color: #667eea; }
+
+    /* Validaciones visuales */
+    .validation-message { font-size: 0.85rem; margin-top: 0.5rem; padding: 0.5rem; border-radius: 6px; }
+    .validation-message.error { background: #f8d7da; color: #721c24; }
+    .validation-message.success { background: #d4edda; color: #155724; }
+    .validation-rules { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    .validation-rules h4 { color: #2c3e50; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .validation-rules ul { list-style: none; font-size: 0.85rem; color: #555; }
+    .validation-rules li { padding: 0.25rem 0; }
+    .validation-rules li:before { content: "✓ "; color: #27ae60; font-weight: bold; }
+
+    .form-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .btn-secondary { flex: 1; padding: 0.7rem; background: #95a5a6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s; }
+    .btn-secondary:hover { opacity: 0.9; }
+    .btn-submit { flex: 1; padding: 0.7rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.3s; }
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    @media (max-width: 968px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <h1>⚙️ Configuración de Usuario</h1>
+      <a href="dashboard.html" class="btn-back">← Volver al Dashboard</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>Opciones</h3>
+      <ul class="sidebar-menu">
+        <li class="active" onclick="openPasswordModal()">🔒 Cambiar Contraseña</li>
+      </ul>
+    </div>
+
+    <!-- Panel de información del usuario -->
+    <div class="info-panel">
+      <h2>Información del Usuario</h2>
+      <div class="user-avatar" id="userAvatar">👤</div>
+      
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">ID de Usuario</div>
+          <div class="info-value" id="infoIdUser">-</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Usuario</div>
+          <div class="info-value" id="infoUser">-</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Nombre Completo</div>
+          <div class="info-value" id="infoNombreCompleto">-</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Rol</div>
+          <div class="info-value" id="infoRol">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de cambio de contraseña -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔒 Cambiar Contraseña</h3>
+        <button class="btn-close" onclick="closePasswordModal()">×</button>
+      </div>
+
+      <div class="validation-rules">
+        <h4>Requisitos de la contraseña:</h4>
+        <ul>
+          <li>Entre 8 y 12 caracteres</li>
+          <li>Al menos 1 letra mayúscula</li>
+          <li>Solo letras y números (sin símbolos especiales)</li>
+          <li>Debe ser diferente a la contraseña actual</li>
+        </ul>
+      </div>
+
+      <form id="passwordForm" onsubmit="cambiarPassword(event)">
+        <!-- Contraseña Actual -->
+        <div class="form-group">
+          <label>Contraseña Actual</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="passwordActual" required>
+          </div>
+        </div>
+
+        <!-- Nueva Contraseña -->
+        <div class="form-group">
+          <label>Nueva Contraseña</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="nuevaPassword" required minlength="8" maxlength="12" oninput="validateNewPassword()">
+          </div>
+          <div id="nuevaPasswordMsg" class="validation-message" style="display: none;"></div>
+        </div>
+
+        <!-- Confirmar Nueva Contraseña -->
+        <div class="form-group">
+          <label>Confirmar Nueva Contraseña</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="confirmarPassword" required minlength="8" maxlength="12" oninput="validateConfirmPassword()">
+          </div>
+          <div id="confirmarPasswordMsg" class="validation-message" style="display: none;"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closePasswordModal()">Cancelar</button>
+          <button type="submit" class="btn-submit" id="btnSubmit">Confirmar Cambio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let usuarioActual = null;
+
+    // Cargar información del usuario al iniciar
+    window.onload = async () => {
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        alert('Sesión no válida. Por favor, inicia sesión nuevamente.');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/usuarios/${userId}`);
+        if (!response.ok) throw new Error('No se pudo cargar la información del usuario');
+        
+        usuarioActual = await response.json();
+        
+        // Mostrar información
+        document.getElementById('infoIdUser').textContent = usuarioActual.idUser;
+        document.getElementById('infoUser').textContent = usuarioActual.user;
+        document.getElementById('infoNombreCompleto').textContent = `${usuarioActual.nombre} ${usuarioActual.apellido}`;
+        document.getElementById('infoRol').textContent = usuarioActual.rol.rol;
+        
+        // Mostrar iniciales en el avatar
+        const iniciales = (usuarioActual.nombre.charAt(0) + usuarioActual.apellido.charAt(0)).toUpperCase();
+        document.getElementById('userAvatar').textContent = iniciales;
+
+      } catch (error) {
+        console.error('Error al cargar usuario:', error);
+        alert('Error al cargar la información del usuario');
+      }
+    };
+
+    // Abrir modal
+    function openPasswordModal() {
+      document.getElementById('passwordModal').classList.add('active');
+      document.getElementById('passwordForm').reset();
+      hideAllMessages();
+    }
+
+    // Cerrar modal
+    function closePasswordModal() {
+      document.getElementById('passwordModal').classList.remove('active');
+      document.getElementById('passwordForm').reset();
+      hideAllMessages();
+    }
+
+    // Toggle visibilidad de contraseña (queda definido pero ya no se usa)
+    function togglePassword(fieldId) {
+      const input = document.getElementById(fieldId);
+      const button = input.nextElementSibling;
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+      }
+    }
+
+    // Validar nueva contraseña mientras se escribe
+    function validateNewPassword() {
+      const nuevaPassword = document.getElementById('nuevaPassword').value;
+      const msgDiv = document.getElementById('nuevaPasswordMsg');
+      const input = document.getElementById('nuevaPassword');
+
+      if (nuevaPassword.length === 0) {
+        msgDiv.style.display = 'none';
+        input.classList.remove('error');
+        return;
+      }
+
+      let errors = [];
+
+      if (nuevaPassword.length < 8 || nuevaPassword.length > 12) {
+        errors.push('Debe tener entre 8 y 12 caracteres');
+      }
+      
+      if (!/[A-Z]/.test(nuevaPassword)) {
+        errors.push('Debe contener al menos 1 mayúscula');
+      }
+      
+      if (!/^[a-zA-Z0-9]+$/.test(nuevaPassword)) {
+        errors.push('Solo letras y números (sin símbolos)');
+      }
+
+      if (errors.length > 0) {
+        msgDiv.className = 'validation-message error';
+        msgDiv.textContent = errors.join('. ');
+        msgDiv.style.display = 'block';
+        input.classList.add('error');
+      } else {
+        msgDiv.className = 'validation-message success';
+        msgDiv.textContent = '✓ Contraseña válida';
+        msgDiv.style.display = 'block';
+        input.classList.remove('error');
+      }
+
+      validateConfirmPassword(); // Re-validar confirmación
+    }
+
+    // Validar que ambas contraseñas coincidan
+    function validateConfirmPassword() {
+      const nuevaPassword = document.getElementById('nuevaPassword').value;
+      const confirmarPassword = document.getElementById('confirmarPassword').value;
+      const msgDiv = document.getElementById('confirmarPasswordMsg');
+      const input = document.getElementById('confirmarPassword');
+
+      if (confirmarPassword.length === 0) {
+        msgDiv.style.display = 'none';
+        input.classList.remove('error');
+        return;
+      }
+
+      if (nuevaPassword !== confirmarPassword) {
+        msgDiv.className = 'validation-message error';
+        msgDiv.textContent = '✗ Las contraseñas no coinciden';
+        msgDiv.style.display = 'block';
+        input.classList.add('error');
+      } else {
+        msgDiv.className = 'validation-message success';
+        msgDiv.textContent = '✓ Las contraseñas coinciden';
+        msgDiv.style.display = 'block';
+        input.classList.remove('error');
+      }
+    }
+
+    // Ocultar todos los mensajes
+    function hideAllMessages() {
+      document.querySelectorAll('.validation-message').forEach(msg => {
+        msg.style.display = 'none';
+      });
+      document.querySelectorAll('.password-input-wrapper input').forEach(input => {
+        input.classList.remove('error');
+      });
+    }
+
+    // Enviar cambio de contraseña
+    async function cambiarPassword(event) {
+      event.preventDefault();
+
+      const passwordActual = document.getElementById('passwordActual').value;
+      const nuevaPassword = document.getElementById('nuevaPassword').value;
+      const confirmarPassword = document.getElementById('confirmarPassword').value;
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      // Validación final
+      if (nuevaPassword !== confirmarPassword) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+
+      // Deshabilitar botón
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Procesando...';
+
+      try {
+        const response = await fetch(`/api/usuarios/${usuarioActual.idUser}/cambiar-password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            passwordActual: passwordActual,
+            nuevaPassword: nuevaPassword
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('✅ ' + data.mensaje + '\n\nPor favor, inicia sesión nuevamente con tu nueva contraseña.');
+          localStorage.clear();
+          window.location.href = 'login.html';
+        } else {
+          alert('❌ Error: ' + data.error);
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = 'Confirmar Cambio';
+        }
+
+      } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        alert('Error de conexión con el servidor');
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Confirmar Cambio';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Configuración de Build: especifica el directorio a publicar.
+[build]
+  publish = "frontend"
+
+# Redirige la raíz del sitio a la página de login.
+[[redirects]]
+  from = "/"
+  to = "/login.html"
+  status = 200
+
+# Proxy para las llamadas a la API del backend.
+# Todas las peticiones que empiecen con /api/ se redirigen al nuevo backend.
+[[redirects]]
+  from = "/api/*"
+  to = "https://backend-8i4v.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# Proxy para acceder a los archivos subidos (ej. imágenes de productos).
+# Todas las peticiones a /uploads/ se redirigen a la carpeta de uploads del nuevo backend.
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://backend-8i4v.onrender.com/uploads/:splat"
+  status = 200
+  force = true
