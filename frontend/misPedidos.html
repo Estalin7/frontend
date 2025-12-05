@@ -215,14 +215,22 @@
     }
 
     // Confirmar cancelación
+  // Confirmar cancelación CORREGIDA
     async function confirmarCancelacion() {
       if (!pedidoACancelar) return;
 
       const userId = localStorage.getItem('userId');
       
       try {
-        const response = await fetch(`/api/pedidos/${pedidoACancelar}/cancelar?idUser=${userId}`, {
-          method: 'PATCH'
+        // CORRECCIÓN: Enviar idUser en el body como JSON, no en la URL
+        const response = await fetch(`/api/pedidos/${pedidoACancelar}/cancelar`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            idUser: userId // El backend espera un mapa con "idUser"
+          })
         });
 
         const data = await response.json();
@@ -232,7 +240,7 @@
           cerrarModal();
           loadPedidos();
         } else {
-          alert(`❌ Error: ${data.error}`);
+          alert(`❌ Error: ${data.error || 'No se pudo cancelar el pedido'}`);
           cerrarModal();
         }
 
