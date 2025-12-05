@@ -85,6 +85,11 @@
     .btn-remove-photo { background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
     .btn-remove-photo:hover { opacity: 0.8; }
 
+    .error-message { color: #e74c3c; font-size: 0.85rem; margin-top: 0.25rem; display: none; }
+    .error-message.show { display: block; }
+    .form-group input.error, .form-group input.error:focus { border-color: #e74c3c; }
+    .form-group input.valid { border-color: #27ae60; }
+
     @media (max-width: 768px) {
       .tabs { flex-direction: column; }
     }
@@ -220,7 +225,7 @@
       <form id="mesaForm" onsubmit="saveMesa(event)">
         <div class="form-group">
           <label for="mesaNumber">Número de Mesa (ID)</label>
-          <input type="text" id="mesaNumber" required inputmode="numeric" pattern="\\d*" maxlength="2" placeholder="1-30" oninput="sanitizeMesaId(this)">
+          <input type="text" id="mesaNumber" required inputmode="numeric" maxlength="2" placeholder="1-30" oninput="sanitizeMesaId(this)">
         </div>
         <div class="form-group">
           <label for="mesaState">Estado</label>
@@ -252,36 +257,38 @@
 
         <div class="form-group">
           <label>Contraseña</label>
-          <input type="password" id="passwordField" required minlength="8" maxlength="12">
+          <input type="password" id="passwordField" required minlength="8" maxlength="12" oninput="validatePassword()">
+          <div class="error-message" id="passwordError"></div>
         </div>
 
         <div class="form-group">
           <label>Confirmar contraseña</label>
-          <input type="password" id="confirmPasswordField" required minlength="8" maxlength="12">
+          <input type="password" id="confirmPasswordField" required minlength="8" maxlength="12" oninput="validateConfirmPassword()">
+          <div class="error-message" id="confirmPasswordError"></div>
         </div>
 
         <div class="form-group">
           <label>Nombre</label>
           <input type="text" id="nombreField" required maxlength="50"
-                oninput="validarSoloLetrasUsuario(this)">
+                oninput="this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g,'');">
         </div>
 
         <div class="form-group">
           <label>Apellido</label>
           <input type="text" id="apellidoField" required maxlength="50"
-                oninput="validarSoloLetrasUsuario(this)">
+                oninput="this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g,'');">
         </div>
 
         <div class="form-group">
           <label>DNI</label>
           <input type="text" id="dniField" required maxlength="8" inputmode="numeric"
-                oninput="this.value = this.value.replace(/[^0-9]/g,'');">
+                oninput="this.value = this.value.replace(/[^0-9]/g,''); validateDNI()">
+          <div class="error-message" id="dniError"></div>
         </div>
 
         <div class="form-group">
           <label>Correo electrónico</label>
-          <input type="email" id="emailField" required maxlength="100"
-                oninput="validarEmail(this)">
+          <input type="email" id="emailField" required maxlength="100">
         </div>
 
         <div class="form-group">
@@ -320,14 +327,12 @@
 
         <div class="form-group">
           <label>Nombre</label>
-          <input type="text" id="editNombre" required maxlength="50"
-                oninput="validarSoloLetrasUsuario(this)">
+          <input type="text" id="editNombre" required>
         </div>
 
         <div class="form-group">
           <label>Apellido</label>
-          <input type="text" id="editApellido" required maxlength="50"
-                oninput="validarSoloLetrasUsuario(this)">
+          <input type="text" id="editApellido" required>
         </div>
 
         <div class="form-group">
@@ -337,8 +342,7 @@
 
         <div class="form-group">
           <label>Correo</label>
-          <input type="email" id="editEmail" required maxlength="100"
-                oninput="validarEmail(this)">
+          <input type="email" id="editEmail" required>
         </div>
 
         <div class="form-group">
@@ -370,6 +374,7 @@
     let tables = []; // Almacenará las mesas traídas de la API
     let editingMesaId = null;
     let usuarios = [];
+    let editingUsuarioId = null;
 
     async function loadUsuarios(){
       try {
@@ -426,6 +431,9 @@
       // Ocultar campos de contraseña al editar
       document.getElementById('passwordField').style.display = "none";
       document.getElementById('confirmPasswordField').style.display = "none";
+      
+      // Limpiar mensajes de error
+      clearValidationMessages();
 
       document.getElementById('usuarioModal').classList.add('active');
     }
@@ -525,13 +533,152 @@
 
 
     function openUsuarioModal() {
+      // Limpiar el ID de edición para asegurar que se cree un nuevo usuario
+      editingUsuarioId = null;
       document.getElementById('usuarioModalTitle').textContent = 'Nuevo Usuario';
       document.getElementById('usuarioForm').reset();
+      // Mostrar campos de contraseña al crear nuevo usuario
+      document.getElementById('passwordField').style.display = "block";
+      document.getElementById('confirmPasswordField').style.display = "block";
+      // Limpiar mensajes de error y clases
+      clearValidationMessages();
       document.getElementById('usuarioModal').classList.add('active');
     }
 
     function closeUsuarioModal() {
+      editingUsuarioId = null; // Limpiar el ID de edición al cerrar
       document.getElementById('usuarioModal').classList.remove('active');
+      clearValidationMessages();
+    }
+
+    function clearValidationMessages() {
+      // Limpiar todos los mensajes de error
+      document.getElementById('passwordError').textContent = '';
+      document.getElementById('passwordError').classList.remove('show');
+      document.getElementById('confirmPasswordError').textContent = '';
+      document.getElementById('confirmPasswordError').classList.remove('show');
+      document.getElementById('dniError').textContent = '';
+      document.getElementById('dniError').classList.remove('show');
+      
+      // Limpiar clases de validación de los inputs
+      document.getElementById('passwordField').classList.remove('error', 'valid');
+      document.getElementById('confirmPasswordField').classList.remove('error', 'valid');
+      document.getElementById('dniField').classList.remove('error', 'valid');
+    }
+
+    function validatePassword() {
+      const passwordField = document.getElementById('passwordField');
+      const password = passwordField.value.trim();
+      const errorElement = document.getElementById('passwordError');
+      
+      // Limpiar clases anteriores
+      passwordField.classList.remove('error', 'valid');
+      errorElement.classList.remove('show');
+      errorElement.textContent = '';
+      
+      if (password.length === 0) {
+        return; // No mostrar error si está vacío (se validará al enviar)
+      }
+      
+      if (password.length < 8) {
+        passwordField.classList.add('error');
+        errorElement.textContent = 'La contraseña debe tener al menos 8 caracteres';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      if (password.length > 12) {
+        passwordField.classList.add('error');
+        errorElement.textContent = 'La contraseña no puede tener más de 12 caracteres';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      // Validar formato: al menos una mayúscula y un número, sin caracteres especiales
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,12}$/;
+      if (!passwordRegex.test(password)) {
+        passwordField.classList.add('error');
+        errorElement.textContent = 'La contraseña debe tener al menos una mayúscula y un número, sin caracteres especiales';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      // Contraseña válida
+      passwordField.classList.add('valid');
+      // También validar la confirmación si ya tiene valor
+      if (document.getElementById('confirmPasswordField').value.trim().length > 0) {
+        validateConfirmPassword();
+      }
+    }
+
+    function validateConfirmPassword() {
+      const confirmField = document.getElementById('confirmPasswordField');
+      const passwordField = document.getElementById('passwordField');
+      const confirmPassword = confirmField.value.trim();
+      const password = passwordField.value.trim();
+      const errorElement = document.getElementById('confirmPasswordError');
+      
+      // Limpiar clases anteriores
+      confirmField.classList.remove('error', 'valid');
+      errorElement.classList.remove('show');
+      errorElement.textContent = '';
+      
+      if (confirmPassword.length === 0) {
+        return; // No mostrar error si está vacío
+      }
+      
+      if (confirmPassword.length < 8) {
+        confirmField.classList.add('error');
+        errorElement.textContent = 'La confirmación debe tener al menos 8 caracteres';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      if (confirmPassword.length > 12) {
+        confirmField.classList.add('error');
+        errorElement.textContent = 'La confirmación no puede tener más de 12 caracteres';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      if (password.length > 0 && confirmPassword !== password) {
+        confirmField.classList.add('error');
+        errorElement.textContent = 'Las contraseñas no coinciden';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      // Confirmación válida
+      if (confirmPassword === password && password.length >= 8 && password.length <= 12) {
+        confirmField.classList.add('valid');
+      }
+    }
+
+    function validateDNI() {
+      const dniField = document.getElementById('dniField');
+      const dni = dniField.value.trim();
+      const errorElement = document.getElementById('dniError');
+      
+      // Limpiar clases anteriores
+      dniField.classList.remove('error', 'valid');
+      errorElement.classList.remove('show');
+      errorElement.textContent = '';
+      
+      if (dni.length === 0) {
+        return; // No mostrar error si está vacío
+      }
+      
+      if (dni.length < 8) {
+        dniField.classList.add('error');
+        errorElement.textContent = 'El DNI debe tener al menos 8 caracteres';
+        errorElement.classList.add('show');
+        return;
+      }
+      
+      // DNI válido
+      if (dni.length === 8) {
+        dniField.classList.add('valid');
+      }
     }
 
     async function saveUsuario(event) {
@@ -592,6 +739,7 @@
 
         if (response.ok) {
           alert('Usuario creado exitosamente');
+          editingUsuarioId = null; // Asegurar que se limpie
           closeUsuarioModal();
           loadUsuarios();
         } else {
@@ -869,15 +1017,27 @@
 
     async function saveMesa(event) {
         event.preventDefault();
-        const numeroMesaStr = (document.getElementById('mesaNumber').value || '').replace(/[^0-9]/g, '');
-        if (!numeroMesaStr) { alert('Ingrese un número de mesa válido'); return; }
-        const numeroMesa = parseInt(numeroMesaStr, 10);
-        if (!(numeroMesa >= 1 && numeroMesa <= 30)) {
-            alert('El ID de mesa debe ser un entero entre 1 y 30.');
+        const numeroMesaStr = (document.getElementById('mesaNumber').value || '').trim();
+        if (!numeroMesaStr) { 
+            alert('Ingrese un número de mesa válido'); 
+            return; 
+        }
+        
+        // Validar que sea solo números
+        if (!/^\d+$/.test(numeroMesaStr)) {
+            alert('El número de mesa debe contener solo dígitos');
             return;
         }
-        const estadoMesa = document.getElementById('mesaState').value;
         
+        const numeroMesa = parseInt(numeroMesaStr, 10);
+        
+        // Validar rango 0-30
+        if (isNaN(numeroMesa) || numeroMesa < 0 || numeroMesa > 30) {
+            alert('El ID de mesa debe ser un número entre 0 y 30.');
+            return;
+        }
+        
+        const estadoMesa = document.getElementById('mesaState').value;
         const isEditing = editingMesaId !== null;
 
         // Añadimos una validación para impedir crear la mesa 0
@@ -909,7 +1069,32 @@
                 closeMesaModal();
                 loadMesas(); // Recargar las mesas para mostrar los cambios
             } else {
-                alert('Error al guardar la mesa. Es posible que el ID ya exista.');
+                const errorData = await response.json().catch(() => ({}));
+                // Si la mesa ya existe, intentar actualizar su estado
+                if (response.status === 409 || errorData.error?.includes('existe')) {
+                    if (confirm('La mesa ya existe. ¿Desea actualizar su estado?')) {
+                        // Intentar actualizar el estado de la mesa existente
+                        try {
+                            const updateResponse = await fetch(`/api/mesas/${numeroMesa}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ idMesa: numeroMesa, estado: estadoMesa })
+                            });
+                            if (updateResponse.ok) {
+                                alert('Estado de la mesa actualizado correctamente.');
+                                closeMesaModal();
+                                loadMesas();
+                            } else {
+                                alert('Error al actualizar el estado de la mesa.');
+                            }
+                        } catch (updateError) {
+                            console.error('Error al actualizar la mesa:', updateError);
+                            alert('No se pudo actualizar el estado de la mesa.');
+                        }
+                    }
+                } else {
+                    alert(errorData.error || 'Error al guardar la mesa. Es posible que el ID ya exista.');
+                }
             }
         } catch (error) {
             console.error('Error de red al guardar la mesa:', error);
@@ -1002,36 +1187,17 @@
     if (cleaned.length === 2) {
       const num = parseInt(cleaned, 10);
       if (num > 30) {
-        // Si excede 30, mantener solo el primer dígito si es válido, sino dejar vacío
+        // Si excede 30, mantener solo el primer dígito si es válido (0-3), sino dejar vacío
         const firstDigit = cleaned[0];
-        cleaned = (firstDigit === '3' || firstDigit === '0') ? firstDigit : '';
+        if (firstDigit === '0' || firstDigit === '1' || firstDigit === '2' || firstDigit === '3') {
+          cleaned = firstDigit;
+        } else {
+          cleaned = '';
+        }
       }
     }
-    // Si tiene un solo dígito mayor a 3, no permitir (porque 4x, 5x, etc. exceden 30)
-    if (cleaned.length === 1 && parseInt(cleaned, 10) > 3) {
-      cleaned = cleaned[0] === '3' ? '3' : '';
-    }
+    // Permitir cualquier dígito único (0-9) ya que todos son válidos en el rango 0-30
     if (cleaned !== inputEl.value) inputEl.value = cleaned;
-  }
-</script>
-<script>
-  // Función para validar nombres y apellidos: solo letras (incluyendo acentos, ñ, ü) y espacios
-  function validarSoloLetrasUsuario(input) {
-    const valorLimpio = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '');
-    if (valorLimpio !== input.value) {
-      input.value = valorLimpio;
-    }
-  }
-
-  // Función para validar email: permite caracteres especiales válidos para correos
-  // Permite: letras, números, puntos, guiones, guiones bajos, arrobas, y el signo +
-  function validarEmail(input) {
-    // Permitir caracteres válidos para emails: letras, números, @, ., -, _, +
-    // No restringir demasiado, dejar que el type="email" y el backend validen el formato completo
-    const valorLimpio = input.value.replace(/[^A-Za-z0-9@._+-]/g, '');
-    if (valorLimpio !== input.value) {
-      input.value = valorLimpio;
-    }
   }
 </script>
 </body>
