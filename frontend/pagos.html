@@ -84,7 +84,7 @@
     .btn-print { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; }
     .btn-close-modal { background: #95a5a6; color: white; }
 
-    /* Comprobante para imprimir */
+    /* Comprobante para imprimir (versión ticket) */
     .comprobante { font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3; max-width: 80mm; margin: 0 auto; }
     .comprobante-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 0.8rem; margin-bottom: 0.8rem; }
     .comprobante-header h2 { font-size: 16px; margin-bottom: 0.3rem; font-weight: bold; }
@@ -173,7 +173,7 @@
         <button class="modal-close" onclick="cerrarModalComprobante()">×</button>
       </div>
       <div class="modal-body" id="comprobanteBody">
-        </div>
+      </div>
       <div class="modal-footer">
         <button class="btn-modal btn-print" onclick="imprimirComprobante()">🖨️ Imprimir Comprobante</button>
         <button class="btn-modal btn-close-modal" onclick="cerrarModalComprobante()">Cerrar</button>
@@ -226,15 +226,13 @@
       }
     }
 
-    // --- AQUÍ ESTÁ LA MODIFICACIÓN ---
+    // Total con redondeo a 0.10 hacia arriba (mantengo tu lógica original)
     function calculateTotal(order) {
       if (!order?.detalles) return 0;
       const subtotal = order.detalles.reduce((sum, item) => sum + (item.precioUnitario || 0) * item.cantidad, 0);
       const totalExacto = subtotal + (subtotal * 0.18);
-      // Redondeo hacia arriba al primer decimal (0.10) a favor del negocio
       return Math.ceil(totalExacto * 10) / 10;
     }
-    // ---------------------------------
 
     function selectOrder(orderId, total) {
       selectedOrderId = orderId;
@@ -252,15 +250,15 @@
       
       document.getElementById('paymentContent').innerHTML = `
         <div class="client-type-section">
-          <label>Tipo de Cliente</label>
+          <label>Tipo de Comprobante</label>
           <div class="radio-group">
             <div class="radio-option ${clientType === 'natural' ? 'selected' : ''}" onclick="setClientType('natural')">
               <input type="radio" name="clientType" value="natural" ${clientType === 'natural' ? 'checked' : ''}>
-              <span>Cliente Natural</span>
+              <span>Boleta</span>
             </div>
             <div class="radio-option ${clientType === 'juridico' ? 'selected' : ''}" onclick="setClientType('juridico')">
               <input type="radio" name="clientType" value="juridico" ${clientType === 'juridico' ? 'checked' : ''}>
-              <span>Cliente Jurídico</span>
+              <span>Factura</span>
             </div>
           </div>
         </div>
@@ -270,25 +268,31 @@
           ${clientType === 'natural' ? `
             <div class="form-row single">
               <div class="form-group">
-                <label>DNI *</label>
-                <input type="text" id="dni" maxlength="8" placeholder="8 dígitos">
+                <label>DNI</label>
+                <input type="text" id="dni" maxlength="8" placeholder="8 dígitos" oninput="validarSoloNumeros(this)">
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label>Nombre *</label><input type="text" id="nombre" placeholder="Nombre"></div>
-              <div class="form-group"><label>Apellido *</label><input type="text" id="apellido" placeholder="Apellido"></div>
+              <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" id="nombre" placeholder="Nombre" maxlength="40" oninput="validarSoloLetras(this)">
+              </div>
+              <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" id="apellido" placeholder="Apellido" maxlength="40" oninput="validarSoloLetras(this)">
+              </div>
             </div>
           ` : `
             <div class="form-row single">
               <div class="form-group">
-                <label>RUC *</label>
-                <input type="text" id="ruc" maxlength="11" placeholder="11 dígitos">
+                <label>RUC</label>
+                <input type="text" id="ruc" maxlength="11" placeholder="11 dígitos" oninput="validarSoloNumeros(this)">
               </div>
             </div>
             <div class="form-row single">
               <div class="form-group">
-                <label>Razón Social *</label>
-                <input type="text" id="razon" placeholder="Razón Social">
+                <label>Razón Social</label>
+                <input type="text" id="razon" placeholder="Razón Social" maxlength="40" oninput="validarRazonSocial(this)">
               </div>
             </div>
           `}
@@ -310,17 +314,18 @@
             <div class="payment-method-icon">💵</div>
             <div class="payment-method-name">Efectivo</div>
           </div>
-          <div class="payment-method ${paymentMethod === 'electronico' ? 'selected' : ''}" onclick="setPaymentMethod('electronico')">
+          <div class="payment-method ${paymentMethod === 'izipay' ? 'selected' : ''}" onclick="setPaymentMethod('izipay')">
             <div class="payment-method-icon">💳</div>
-            <div class="payment-method-name">Electrónico</div>
+            <div class="payment-method-name">Izipay</div>
           </div>
         </div>
 
-        <div class="amount-section" id="amountSection" style="${paymentMethod === 'electronico' ? 'display:none;' : ''}">
+        <div class="amount-section" id="amountSection" style="${paymentMethod === 'efectivo' ? '' : 'display:none;'}">
           <div class="amount-row">
             <div class="form-group">
-              <label>Monto Recibido *</label>
-              <input type="number" id="montoPagado" placeholder="0.00" step="0.01" min="0" oninput="calculateChange()">
+              <label>Monto Recibido</label>
+              <input type="text" id="montoPagado" placeholder="0.00" inputmode="decimal" 
+                     oninput="validarPrecio(this); calculateChange()">
             </div>
             <div class="form-group">
               <label>Vuelto</label>
@@ -330,7 +335,7 @@
         </div>
 
         <div id="errorMessage" class="error-message"></div>
-        <button class="btn-pay" id="btnPay" onclick="processPayment()" disabled>
+        <button class="btn-pay" id="btnPay" onclick="processPayment()" ${paymentMethod === 'efectivo' ? 'disabled' : ''}>
           💰 Procesar Pago - S/ ${selectedOrderTotal.toFixed(2)}
         </button>
       `;
@@ -346,15 +351,12 @@
     }
 
     function setPaymentMethod(method) {
-      if (method === 'electronico') {
-        alert('⚠️ El pago electrónico aún no está implementado.');
-        return;
-      }
       paymentMethod = method;
       showPaymentForm();
     }
 
     function calculateChange() {
+      if (paymentMethod !== 'efectivo') return;
       const montoInput = document.getElementById('montoPagado');
       const vueltoInput = document.getElementById('vuelto');
       const btnPay = document.getElementById('btnPay');
@@ -381,18 +383,31 @@
     async function processPayment() {
       const btnPay = document.getElementById('btnPay');
       let pagoData = {
-        idPedido: selectedOrderId,
-        idMetodoPago: 1,
-        montoRecibido: parseFloat(document.getElementById('montoPagado')?.value) || 0
-      };
+      idPedido: selectedOrderId,
+      idMetodoPago: (paymentMethod === 'efectivo') ? 1 : 2, // 1 = Efectivo, 2 = Izipay
+      montoRecibido: 0
+    };
 
       if (clientType === 'natural') {
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('nombre').value.trim();
         const apellido = document.getElementById('apellido').value.trim();
+
         if (!dni || dni.length !== 8) { showError('DNI debe tener 8 dígitos'); return; }
+        if (!/^\d{8}$/.test(dni)) { showError('DNI solo debe contener números'); return; }
         if (!nombre) { showError('Nombre obligatorio'); return; }
+        if (nombre.length > 40) { showError('El nombre no puede exceder 40 caracteres'); return; }
         if (!apellido) { showError('Apellido obligatorio'); return; }
+        if (apellido.length > 40) { showError('El apellido no puede exceder 40 caracteres'); return; }
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(nombre)) { 
+          showError('El nombre solo debe contener letras'); 
+          return; 
+        }
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/.test(apellido)) { 
+          showError('El apellido solo debe contener letras'); 
+          return; 
+        }
+
         pagoData.dni = dni;
         pagoData.nombre = nombre;
         pagoData.apellido = apellido;
@@ -401,8 +416,12 @@
       } else {
         const ruc = document.getElementById('ruc').value.trim();
         const razon = document.getElementById('razon').value.trim();
+
         if (!ruc || ruc.length !== 11) { showError('RUC debe tener 11 dígitos'); return; }
+        if (!/^\d{11}$/.test(ruc)) { showError('RUC solo debe contener números'); return; }
         if (!razon) { showError('Razón social obligatoria'); return; }
+        if (razon.length > 40) { showError('La razón social no puede exceder 40 caracteres'); return; }
+
         pagoData.ruc = ruc;
         pagoData.razon = razon;
         pagoData.dni = null;
@@ -410,9 +429,18 @@
         pagoData.apellido = null;
       }
 
-      if (pagoData.montoRecibido < selectedOrderTotal) {
-        showError('Monto insuficiente');
-        return;
+      if (paymentMethod === 'efectivo') {
+        const montoRecibidoStr = document.getElementById('montoPagado')?.value.trim() || '0';
+        const montoRecibido = parseFloat(montoRecibidoStr) || 0;
+        pagoData.montoRecibido = montoRecibido;
+
+        if (montoRecibido < selectedOrderTotal) {
+          showError('Monto insuficiente');
+          return;
+        }
+      } else {
+        // Izipay: se paga exactamente el total, no hay vuelto
+        pagoData.montoRecibido = selectedOrderTotal;
       }
 
       btnPay.disabled = true;
@@ -571,6 +599,63 @@
         cerrarModalComprobante();
       }
     });
+
+    // === VALIDACIONES COPIADAS DE LA OTRA INTERFAZ ===
+
+    function validarSoloNumeros(input) {
+      const valorLimpio = input.value.replace(/[^0-9]/g, '');
+      if (valorLimpio !== input.value) {
+        input.value = valorLimpio;
+      }
+    }
+
+    function validarSoloLetras(input) {
+      let valorLimpio = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, '');
+      if (valorLimpio.length > 40) {
+        valorLimpio = valorLimpio.slice(0, 40);
+      }
+      if (valorLimpio !== input.value) {
+        input.value = valorLimpio;
+      }
+    }
+
+    function validarRazonSocial(input) {
+      let valorLimpio = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü0-9\s&.,\-_/()]/g, '');
+      if (valorLimpio.length > 40) {
+        valorLimpio = valorLimpio.slice(0, 40);
+      }
+      if (valorLimpio !== input.value) {
+        input.value = valorLimpio;
+      }
+    }
+
+    function validarPrecio(input) {
+      let valor = input.value.replace(/[^0-9.]/g, '');
+      const partes = valor.split('.');
+
+      if (partes.length > 2) {
+        valor = partes[0] + '.' + partes.slice(1).join('').replace(/\./g, '');
+      }
+
+      const regex = /^(\d{0,5})(?:\.(\d{0,2}))?$/;
+      const match = valor.match(regex);
+
+      if (match) {
+        valor = match[1] + (match[2] !== undefined ? '.' + match[2] : '');
+      } else {
+        if (partes.length === 2) {
+          const enteros = partes[0].slice(0, 5);
+          const decimales = partes[1].slice(0, 2);
+          valor = enteros + '.' + decimales;
+        } else {
+          valor = valor.slice(0, 5);
+        }
+      }
+
+      if (valor !== input.value) {
+        input.value = valor;
+      }
+    }
 
     window.onload = loadOrders;
     setInterval(loadOrders, 30000);
