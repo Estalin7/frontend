@@ -31,7 +31,7 @@ async function iniciarSesion() {
     if (data.rol) {
       // Guardamos el rol en localStorage
       localStorage.setItem('rol', data.rol);
-
+      localStorage.setItem('userId', data.userId);
       // Mostrar mensaje de éxito y redirigir al dashboard
       mostrarMensaje(data.mensaje || "¡Inicio de sesión exitoso!", "success");
 
